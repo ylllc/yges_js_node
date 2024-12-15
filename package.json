@@ -1,3 +1,6 @@
 {
-	"type": "module"
+	"type": "module",
+	"dependencies": {
+		"mime-lite": "^1.0.3"
+	}
 }
