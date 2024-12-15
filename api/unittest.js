@@ -9,6 +9,7 @@ import assert from 'node:assert';
 import test from 'node:test';
 
 import util from './util.js';
+import hap_global from './happening.js';
 
 function _cpmsg(msg,v1,op,v2){
 	if(!msg)msg='Test Mismatch:';
@@ -44,5 +45,13 @@ export default {
 			if(t.filter!==undefined && !t.filter)continue;
 			test(t.title,t.proc);
 		}
+
+		test(
+			'Final Cleanup',
+			()=>{
+				hap_global.cleanup();
+				if(!hap_global.isCleaned())throw util.inspect(hap_global.getInfo());
+			},
+		);
 	},
 };
