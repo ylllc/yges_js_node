@@ -34,10 +34,35 @@ Can one touch installing with update_all.bat
 Run a Test Runner of Node.js standard.  
 ```
 $ cd test
-$ node --test
+$ node --test **/*.js
 ```
 
 ### for Windows
 
 Can one touch testing with test_all.bat
 
+## Sample web server
+
+Run a server.  
+```
+$ npm update
+$ cd example
+$ node 100-http_server.js
+```
+
+Access by your web browser.  
+
+- http://localhost:8080/
+	- Hello World!
+- http://localhost:8088/
+	- Show the Home Page.
+- http://localhost:8088/doc/
+	- Show docs. (see Documentation)
+- http://localhost:8088/test.html
+	- Run Test Runner.
+
+### Shutdown the server
+
+```
+$ rm server_running
+```
