@@ -3,14 +3,18 @@
 // © 2024 Yggdrasil Leaves, LLC.          //
 //        All rights reserved.            //
 
-// Low Level File Control for Node.js //
-
-import timing from './timing.js';
+import YgEs from './common.js';
+import Timing from './timing.js';
 import fs from 'fs';
+import {glob} from 'node:fs';
 
-function _initStat(stat){
+// Low Level File Control for Node.js --- //
+(()=>{ // local namespace 
+
+function _initStat(path,stat){
 
 	var t={
+		getPath:()=>path,
 		getLowLevel:()=>stat,
 		isFile:()=>{
 			if(!stat)return null;
@@ -68,7 +72,7 @@ function _initStat(stat){
 	return t;
 }
 
-var mif={
+YgEs.FS={
 	name:'YgEs_FileLowLevel',
 	User:{},
 
@@ -79,17 +83,17 @@ var mif={
 		return fs.promises.mkdir(path,opt);
 	},
 	stat:(path,opt={})=>{
-		return timing.toPromise(async (ok,ng)=>{
-			timing.fromPromise(
+		return Timing.toPromise(async (ok,ng)=>{
+			Timing.fromPromise(
 				fs.promises.stat(path,opt),
-				(res)=>{ok(_initStat(res));},
+				(res)=>{ok(_initStat(path,res));},
 				(err)=>{ok(null);}
 			);
 		});
 	},
 	isDir:(path)=>{
-		return timing.toPromise(async (ok,ng)=>{
-			timing.fromPromise(
+		return Timing.toPromise(async (ok,ng)=>{
+			Timing.fromPromise(
 				mif.stat(proc),
 				(res)=>{ok(res.isDir());},
 				(err)=>{ok(false);}
@@ -97,8 +101,8 @@ var mif={
 		});
 	},
 	isFile:(path)=>{
-		return timing.toPromise(async (ok,ng)=>{
-			timing.fromPromise(
+		return Timing.toPromise(async (ok,ng)=>{
+			Timing.fromPromise(
 				mif.stat(proc),
 				(res)=>{ok(res.isFile());},
 				(err)=>{ok(false);}
@@ -115,6 +119,15 @@ var mif={
 		return fs.promises.rm(path,opt);
 	},
 
+	glob:(dir,ptn='*')=>{
+		return Timing.toPromise(async (ok,ng)=>{
+			glob(ptn,{cwd:dir},(e,r)=>{
+				if(e)ng(e);
+				else ok(r);
+			});
+		});
+	},
 }
 
-export default mif;
+})();
+export default YgEs.FS;
