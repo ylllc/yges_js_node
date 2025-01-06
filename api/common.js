@@ -1,6 +1,6 @@
 // † Yggdrasil Essense for JavaScript † //
 // ====================================== //
-// © 2024 Yggdrasil Leaves, LLC.          //
+// © 2024-5 Yggdrasil Leaves, LLC.        //
 //        All rights reserved.            //
 
 // Common Store ------------------------- //
@@ -12,6 +12,10 @@ let YgEs={
 }
 
 YgEs.createEnum=(src)=>{
+
+	let ll={}
+	for(let i=0;i<src.length;++i)ll[src[i]]=i;
+	return Object.freeze(ll);
 }
 
 YgEs.fromError=(err)=>{

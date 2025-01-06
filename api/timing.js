@@ -1,6 +1,6 @@
 // † Yggdrasil Essense for JavaScript † //
 // ====================================== //
-// © 2024 Yggdrasil Leaves, LLC.          //
+// © 2024-5 Yggdrasil Leaves, LLC.        //
 //        All rights reserved.            //
 
 import YgEs from './common.js';
@@ -28,24 +28,23 @@ let Timing=YgEs.Timing={
 			else throw e;
 		});
 	},
-	toPromise:(cb_proc,cb_done=null,cb_fail=null)=>{
-		let p=new Promise((ok,ng)=>{
+	toPromise:(cb_proc,cb_ok=null,cb_ng=null)=>{
+		return new Promise((ok,ng)=>{
 			cb_proc(ok,ng);
 		}).then((r)=>{
-			if(cb_done)cb_done(r);
+			if(cb_ok)cb_ok(r);
 			return r;
 		}).catch((e)=>{
-			if(cb_fail)cb_fail(e);
+			if(cb_ng)cb_ng(e);
 			else throw e;
 		});
-		return p;
 	},
 
-	delay:(ms,cb_done,cb_cancel=null)=>{
+	delay:(ms,cb_done,cb_abort=null)=>{
 
 		let h=null;
 		if(!cb_done)return ()=>{
-			if(cb_cancel)cb_cancel();
+			if(cb_abort)cb_abort();
 		};
 
 		h=setTimeout(()=>{
@@ -58,7 +57,7 @@ let Timing=YgEs.Timing={
 			if(h==null)return;
 			clearTimeout(h);
 			h=null;
-			if(cb_cancel)cb_cancel();
+			if(cb_abort)cb_abort();
 		}
 	},
 

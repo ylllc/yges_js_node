@@ -1,6 +1,6 @@
 ﻿// † Yggdrasil Essense for JavaScript † //
 // ====================================== //
-// © 2024 Yggdrasil Leaves, LLC.          //
+// © 2024-5 Yggdrasil Leaves, LLC.        //
 //        All rights reserved.            //
 
 import YgEs from './common.js';
@@ -13,7 +13,7 @@ import FS from './fs_ll.js';
 YgEs.File={
 	name:'YgEs_FileControl',
 	User:{},
-	Happen:HappeningManager,
+	HappenTo:HappeningManager,
 
 	exists:(path)=>FS.exists(path),
 	isFile:(path)=>FS.isFile(path),
