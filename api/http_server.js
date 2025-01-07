@@ -28,18 +28,18 @@ async function _transfer(res,stat,type=null,cs=null){
 
 	// content type	
 	if(!type){
-		var ext=path.extname(stat.getPath());
+		var ext=path.extname(stat.GetPath());
 		if(ext)ext=ext.substring(1);
 		type=mime.getType(ext);
 	}
 	if(!type)type='apllication/octet-stream';
 	else if(type=='text/html'){
 		// charset 
-		if(typeof cs=='function')cs=cs(stat.getPath());
+		if(typeof cs=='function')cs=cs(stat.GetPath());
 		if(cs)type+=';charset='+cs;
 	}
 
-	var body=await File.load(stat.getPath());
+	var body=await File.Load(stat.GetPath());
 	res.writeHead(200,{'Content-Type':type,'Content-Length':stat.getSize()});
 	res.end(body);
 }
@@ -52,15 +52,15 @@ async function _dirent(basedir,srcdir,deep,opt){
 		files:{}
 	}
 
-	let g=await File.glob(srcdir,'*');
+	let g=await File.Glob(srcdir,'*');
 	for(let f of g){
 		let path=srcdir+f;
-		let st=await File.stat(path);
+		let st=await File.Stat(path);
 		if(opt.filter){
 			if(!opt.filter(srcdir,f,st))continue;
 		}
 
-		if(st.isFile()){
+		if(st.IsFile()){
 			let u={size:st.getSize()}
 			if(opt.mtime)u.mtime=st.getModifyTime()?.toISOString();
 			if(opt.ctime)u.ctime=st.getChangeTime()?.toISOString();
@@ -68,7 +68,7 @@ async function _dirent(basedir,srcdir,deep,opt){
 			if(opt.btime)u.btime=st.getBirthTime()?.toISOString();
 			t.files[f]=u;
 		}
-		else if(st.isDir()){
+		else if(st.IsDir()){
 			if(deep)t.dirs[f]=await _dirent(basedir,srcdir+f+'/',(deep<0)?deep:(deep-1),opt);
 			else t.dirs[f]={};
 		}
@@ -106,9 +106,9 @@ function _serve_new(dir,opt={}){
 			var basepath=tt.Dir+'/';
 			var srcpath=basepath+subpath;
 
-			Timing.toPromise(async (ok,ng)=>{
+			Timing.ToPromise(async (ok,ng)=>{
 
-				var st=await File.stat(srcpath);
+				var st=await File.Stat(srcpath);
 
 				if(srcpath.substring(srcpath.length-1)!='/'){
 					// check file exists 
@@ -119,7 +119,7 @@ function _serve_new(dir,opt={}){
 					}
 
 					// add extra / when srcpath is directory 
-					if(st.isDir()){
+					if(st.IsDir()){
 						walker.ParsedURL.path+='/';
 						var url=walker.ParsedURL.bake();
 						walker.Response.writeHead(301,{Location:url});
@@ -149,9 +149,9 @@ function _serve_new(dir,opt={}){
 						// try finding an index file 
 						var f=false;
 						for(var n of tt.Indices){
-							var st2=await File.stat(srcpath+n);
+							var st2=await File.Stat(srcpath+n);
 							if(!st2)continue;
-							if(!st2.isFile())continue;
+							if(!st2.IsFile())continue;
 							f=true;
 							srcpath+=n;
 							st=st2;
@@ -233,7 +233,7 @@ function _request(listener,req,res){
 		listener.Route.walk(walker);
 	}
 	catch(e){
-		listener.getHappeningManager().happenError(e);
+		listener.GetHappeningManager().HappenError(e);
 		listener.Error(res,500,'Internal Server Error');
 	}
 }
@@ -247,27 +247,27 @@ function _listener_new(port,route,opt={}){
 
 	var ws={
 		name:'YgEs_HTTPServer',
-		happen:opt.happen??HappeningManager.createLocal(),
-		launcher:opt.launcher??Engine.createLauncher(),
+		happen:opt.happen??HappeningManager.CreateLocal(),
+		launcher:opt.launcher??Engine.CreateLauncher(),
 		user:opt.user??{},
 
 		cb_open:(wk)=>{
-			log.info('bgn of server port '+port);
+			log.Info('bgn of server port '+port);
 			_internal.listen(port);
 		},
 		cb_close:(wk)=>{
 			var done=false;
-			_internal.close(()=>{
+			_internal.Close(()=>{
 				done=true;
 			});
-			wk.waitFor(()=>done);
+			wk.WaitFor(()=>done);
 		},
 		cb_finish:(wk,clean)=>{
-			log.info('end of server port '+port);
+			log.Info('end of server port '+port);
 		},
 	}
 
-	var listener=AgentManager.standby(ws);
+	var listener=AgentManager.StandBy(ws);
 	listener.getPort=()=>port;
 	listener.Route=route;
 	listener.Error=_error_default;

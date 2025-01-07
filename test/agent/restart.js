@@ -12,16 +12,16 @@ let agent=null;
 let handle=null;
 
 let workset={
-	user:{count:1},
+	user:{Count:1},
 	cb_open:(agent)=>{
-		++agent.User.count;
+		++agent.User.Count;
 	},
 	cb_ready:(agent)=>{
-		if(agent.User.count<10)agent.restart();
-		else handle.close();
+		if(agent.User.Count<10)agent.Restart();
+		else handle.Close();
 	},
 	cb_finish:(agent)=>{
-		Test.chk_strict(agent.User.count,10);
+		Test.chk_strict(agent.User.Count,10);
 	},
 }
 
@@ -31,14 +31,14 @@ const scenaria=[
 		proc:async (tool)=>{
 			workset.launcher=tool.Launcher;
 			workset.happen=tool.Launcher.HappenTo;
-			agent=AgentManager.standby(workset);
-			Test.chk_strict(agent.User.count,1);
-			handle=agent.fetch();
-			handle.open();
+			agent=AgentManager.StandBy(workset);
+			Test.chk_strict(agent.User.Count,1);
+			handle=agent.Fetch();
+			handle.Open();
 
-			await tool.Launcher.toPromise();
+			await tool.Launcher.ToPromise();
 		},
 	},
 ]
 
-Test.run(scenaria);
+Test.Run(scenaria);

@@ -30,11 +30,11 @@ const scenaria=[
 
 			// run with undefined state 
 			// abort soon 
-			StateMachine.run(null,states,opt);
+			StateMachine.Run(null,states,opt);
 
-			await tool.Launcher.toPromise();
+			await tool.Launcher.ToPromise();
 		},
 	},
 ]
 
-Test.run(scenaria);
+Test.Run(scenaria);

@@ -10,16 +10,16 @@ import log from '../api/logger.js';
 import util from '../api/util.js';
 
 // start the Engine 
-Engine.start();
+Engine.Start();
 
 // local launcher 
-var launcher=Engine.createLauncher({
+var launcher=Engine.CreateLauncher({
 	name:'MyLauncher',
 	limit:3, // can limit parallel proc 
 });
 
-util.safeStepIter(0,10,1,(i)=>{
-	launcher.launch({
+util.SafeStepIter(0,10,1,(i)=>{
+	launcher.Launch({
 		user:{
 			// initial settings 
 			name:'async '+i,
@@ -27,7 +27,7 @@ util.safeStepIter(0,10,1,(i)=>{
 		cb_start:(user)=>{
 			// called before running 
 			user.lock=true;
-			Engine.delay(500,(ctx)=>{
+			Engine.Delay(500,(ctx)=>{
 				user.lock=false;
 			});
 		},
@@ -36,29 +36,29 @@ util.safeStepIter(0,10,1,(i)=>{
 			return user.lock;
 		},
 		cb_done:(user)=>{
-			log.info(user.name+' done');
+			log.Info(user.name+' done');
 		},
 		cb_abort:(user)=>{
-			log.info(user.name+' abort');
+			log.Info(user.name+' abort');
 		},
 	});
 });
 
 // sync in a launcher
-launcher.sync((user)=>{
-	log.info('all done');
+launcher.Sync((user)=>{
+	log.Info('all done');
 });
 
 // count up with 1 sec interval 
 function countup(max,now=0){
 
-	Engine.delay(1000,(user)=>{
+	Engine.Delay(1000,(user)=>{
 		if(now>=max)return;
 		++now;
-		log.info('count: '+now);
+		log.Info('count: '+now);
 		countup(max,now);
 	},(user)=>{
-		log.info('abort counting');
+		log.Info('abort counting');
 	});
 }
 
@@ -68,10 +68,10 @@ countup(10);
 // after 5 sec, the Engine is ended. 
 // and all pollings are aborted. 
 // and can exit.
-Engine.delay(5000,(ctx)=>{
-	log.info('end of the engine');
+Engine.Delay(5000,(ctx)=>{
+	log.Info('end of the engine');
 
-	Engine.stop();
+	Engine.Stop();
 },(ctx)=>{
-	log.info('abort root');
+	log.Info('abort root');
 });

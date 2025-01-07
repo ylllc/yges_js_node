@@ -26,13 +26,13 @@ function _run(start,states={},opt={}){
 	let ctrl={
 		name:name+'_Control',
 		User:{},
-		getHappeningManager:()=>happen,
-		getPrevState:()=>state_prev,
-		getCurState:()=>state_cur,
-		getNextState:()=>state_next,
+		GetHappeningManager:()=>happen,
+		GetPrevState:()=>state_prev,
+		GetCurState:()=>state_cur,
+		GetNextState:()=>state_next,
 	}
 
-	let getInfo=(phase)=>{
+	let GetInfo=(phase)=>{
 		return {
 			name:name,
 			prev:state_prev,
@@ -56,10 +56,10 @@ function _run(start,states={},opt={}){
 		}
 		cur=states[state_next]??null;
 		if(!cur){
-			stmac.happen.happenProp({
+			stmac.happen.HappenProp({
 				class:'YgEs_Statemachine_Error',
 				cause:'state missing: '+state_next,
-				info:getInfo('selecing'),
+				info:GetInfo('selecing'),
 			});
 			poll_cur=poll_nop;
 			return;
@@ -72,11 +72,11 @@ function _run(start,states={},opt={}){
 			poll_cur=poll_up;
 		}
 		catch(e){
-			stmac.happen.happenProp({
+			stmac.happen.HappenProp({
 				class:'YgEs_Statemachine_Error',
 				cause:'throw from a callback',
-				info:getInfo('cb_start'),
-				err:YgEs.fromError(e),
+				info:GetInfo('cb_start'),
+				err:YgEs.FromError(e),
 			});
 			poll_cur=poll_nop;
 		}
@@ -88,16 +88,16 @@ function _run(start,states={},opt={}){
 			var r=cur.poll_up?cur.poll_up(ctrl,user):true;
 		}
 		catch(e){
-			stmac.happen.happenProp({
+			stmac.happen.HappenProp({
 				class:'YgEs_Statemachine_Error',
 				cause:'throw from a callback',
-				info:getInfo('poll_up'),
-				err:YgEs.fromError(e),
+				info:GetInfo('poll_up'),
+				err:YgEs.FromError(e),
 			});
 			r=false;
 		}
 		if(r==null)return; // continuing 
-		else if(r===false)proc.abort();
+		else if(r===false)proc.Abort();
 		else if(r===true){
 			try{
 				// normal transition 
@@ -105,11 +105,11 @@ function _run(start,states={},opt={}){
 				poll_cur=poll_keep;
 			}
 			catch(e){
-				stmac.happen.happenProp({
+				stmac.happen.HappenProp({
 					class:'YgEs_Statemachine_Error',
 					cause:'throw from a callback',
-					info:getInfo('cb_ready'),
-					err:YgEs.fromError(e),
+					info:GetInfo('cb_ready'),
+					err:YgEs.FromError(e),
 				});
 				poll_cur=poll_nop;
 			}
@@ -127,16 +127,16 @@ function _run(start,states={},opt={}){
 			var r=cur.poll_keep?cur.poll_keep(ctrl,user):true;
 		}
 		catch(e){
-			stmac.happen.happenProp({
+			stmac.happen.HappenProp({
 				class:'YgEs_Statemachine_Error',
 				cause:'throw from a callback',
-				info:getInfo('poll_keep'),
-				err:YgEs.fromError(e),
+				info:GetInfo('poll_keep'),
+				err:YgEs.FromError(e),
 			});
 			r=false;
 		}
 		if(r==null)return; // continuing 
-		else if(r===false)proc.abort();
+		else if(r===false)proc.Abort();
 		else if(r===true){
 			// normal end 
 			state_next=null;
@@ -154,11 +154,11 @@ function _run(start,states={},opt={}){
 			poll_cur=poll_down;
 		}
 		catch(e){
-			stmac.happen.happenProp({
+			stmac.happen.HappenProp({
 				class:'YgEs_Statemachine_Error',
 				cause:'throw from a callback',
-				info:getInfo('cb_stop'),
-				err:YgEs.fromError(e),
+				info:GetInfo('cb_stop'),
+				err:YgEs.FromError(e),
 			});
 			poll_cur=poll_nop;
 		}
@@ -170,16 +170,16 @@ function _run(start,states={},opt={}){
 			var r=cur.poll_down?cur.poll_down(ctrl,user):true;
 		}
 		catch(e){
-			stmac.happen.happenProp({
+			stmac.happen.HappenProp({
 				class:'YgEs_Statemachine_Error',
 				cause:'throw from a callback',
-				info:getInfo('poll_down'),
-				err:YgEs.fromError(e),
+				info:GetInfo('poll_down'),
+				err:YgEs.FromError(e),
 			});
 			r=false;
 		}
 		if(r==null)return; // continuing 
-		else if(r===false)proc.abort();
+		else if(r===false)proc.Abort();
 		else if(r===true){
 			// normal transition 
 			call_end(user);
@@ -196,11 +196,11 @@ function _run(start,states={},opt={}){
 			call_start(user);
 		}
 		catch(e){
-			stmac.happen.happenProp({
+			stmac.happen.HappenProp({
 				class:'YgEs_Statemachine_Error',
 				cause:'throw from a callback',
-				info:getInfo('cb_end'),
-				err:YgEs.fromError(e),
+				info:GetInfo('cb_end'),
+				err:YgEs.FromError(e),
 			});
 			poll_cur=poll_nop;
 		}
@@ -222,14 +222,14 @@ function _run(start,states={},opt={}){
 		cb_abort:opt.cb_abort??'',
 	}
 
-	let proc=launcher.launch(stmac);
-	ctrl.isStarted=proc.isStarted;
-	ctrl.isFinished=proc.isFinished;
-	ctrl.isAborted=proc.isAborted;
-	ctrl.isEnd=proc.isEnd;
-	ctrl.abort=proc.abort;
-	ctrl.sync=proc.sync;
-	ctrl.toPromise=proc.toPromise;
+	let proc=launcher.Launch(stmac);
+	ctrl.IsStarted=proc.IsStarted;
+	ctrl.IsFinished=proc.IsFinished;
+	ctrl.IsAborted=proc.IsAborted;
+	ctrl.IsEnd=proc.IsEnd;
+	ctrl.Abort=proc.Abort;
+	ctrl.Sync=proc.Sync;
+	ctrl.ToPromise=proc.ToPromise;
 	return ctrl;
 }
 
@@ -237,7 +237,7 @@ YgEs.StateMachine={
 	name:'YgEs_StateMachineContainer',
 	User:{},
 
-	run:_run,
+	Run:_run,
 }
 
 })();

@@ -10,13 +10,13 @@ import Log from './logger.js';
 (()=>{ // local namespace 
 
 function _default_happened(hap){
-	Log.fatal(hap.toString(),hap.getProp());	
+	Log.Fatal(hap.ToString(),hap.GetProp());	
 }
 function _default_abandoned(hap){
-	Log.warn('* Abandoned * '+hap.toString(),hap.getProp());	
+	Log.Warn('* Abandoned * '+hap.ToString(),hap.GetProp());	
 }
 function _default_resolved(hap){
-	Log.debug('* Resolved * '+hap.toString(),hap.getProp());	
+	Log.Debug('* Resolved * '+hap.ToString(),hap.GetProp());	
 }
 
 function _create_happening(cbprop,cbstr,cberr,init={}){
@@ -30,21 +30,22 @@ function _create_happening(cbprop,cbstr,cberr,init={}){
 		name:init.name??'YgEs_Happening',
 		User:init.user??{},
 
-		getProp:cbprop,
+		GetProp:cbprop,
+		ToString:cbstr,
 		toString:cbstr,
-		toJSON:()=>JSON.stringify(hap.getProp()),
-		toError:cberr,
+		ToJSON:()=>JSON.stringify(hap.GetProp()),
+		ToError:cberr,
 
-		isResolved:()=>resolved,
-		resolve:()=>{
+		IsResolved:()=>resolved,
+		Resolve:()=>{
 			if(resolved)return;
 			resolved=true;
 			abandoned=false;
 			if(cb_resolved)cb_resolved(hap);
 		},
 
-		isAbandoned:()=>abandoned && !resolved,
-		abandon:()=>{
+		IsAbandoned:()=>abandoned && !resolved,
+		Abandon:()=>{
 			if(resolved)return;
 			if(abandoned)return;
 			abandoned=true;
@@ -61,92 +62,92 @@ function _create_manager(prm,parent=null){
 
 	let mng={
 		name:prm.name??'YgEs_HappeningManager',
-		Happened:prm.happen??null,
+		CB_Happened:prm.happen??null,
 		User:prm.user??{},
 
-		createLocal:(prm={})=>{
+		CreateLocal:(prm={})=>{
 			let cm=_create_manager(prm,mng);
 			children.push(cm);
 			return cm;
 		},
 
-		getParent:()=>parent,
-		getChildren:()=>children,
-		getIssues:()=>issues,
+		GetParent:()=>parent,
+		GetChildren:()=>children,
+		GetIssues:()=>issues,
 
-		abandon:()=>{
+		Abandon:()=>{
 			for(let sub of children){
-				sub.abandon();
+				sub.Abandon();
 			}
 			for(let hap of issues){
-				hap.abandon();
+				hap.Abandon();
 			}
 			issues=[]
 		},
 
-		countIssues:()=>{
+		CountIssues:()=>{
 			let ct=issues.length;
 			for(let sub of children){
-				ct+=sub.countIssues();
+				ct+=sub.CountIssues();
 			}
 			return ct;
 		},
-		isCleaned:()=>{
+		IsCleaned:()=>{
 			if(issues.length>0)return false;
 			for(let sub of children){
-				if(!sub.isCleaned())return false;
+				if(!sub.IsCleaned())return false;
 			}
 			return true;
 		},
-		cleanup:()=>{
+		CleanUp:()=>{
 			let tmp=[]
 			for(let hap of issues){
-				if(!hap.isResolved())tmp.push(hap);
+				if(!hap.IsResolved())tmp.push(hap);
 			}
 			issues=tmp;
 
 			for(let sub of children){
-				sub.cleanup();
+				sub.CleanUp();
 			}
 		},
 
-		getInfo:()=>{
+		GetInfo:()=>{
 			let info={name:mng.name,_issues:[],_children:[]}
 			for(let hap of issues){
-				if(hap.isResolved())continue;
-				info._issues.push({name:hap.name,prop:hap.getProp()});
+				if(hap.IsResolved())continue;
+				info._issues.push({name:hap.name,prop:hap.GetProp()});
 			}
 			for(let sub of children){
-				let si=sub.getInfo();
+				let si=sub.GetInfo();
 				if(si._issues.length>0 || si._children.length>0)info._children.push(si);
 			}
 			return info;
 		},
 
-		poll:(cb)=>{
+		Poll:(cb)=>{
 			if(!cb)return;
 			for(let hap of issues){
-				if(hap.isResolved())continue;
-				if(hap.isAbandoned())continue;
+				if(hap.IsResolved())continue;
+				if(hap.IsAbandoned())continue;
 				cb(hap);
 			}
 			for(let sub of children){
-				sub.poll(cb);
+				sub.Poll(cb);
 			}
 		},
 
 		_callHappened:(hap)=>{
-			if(mng.Happened)mng.Happened(hap);
+			if(mng.CB_Happened)mng.CB_Happened(hap);
 			else if(parent)parent._callHappened(hap);
 			else _default_happened(hap);
 		},
-		happen:(hap)=>{
+		Happen:(hap)=>{
 			issues.push(hap);
 			mng._callHappened(hap);
 			return hap;
 		},
-		happenMsg:(msg,init={})=>{
-			return mng.happen(_create_happening(
+		HappenMsg:(msg,init={})=>{
+			return mng.Happen(_create_happening(
 				()=>{return {msg:''+msg}},
 				()=>''+msg,
 				()=>new Error(msg),
@@ -154,8 +155,8 @@ function _create_manager(prm,parent=null){
 			));
 		},
 
-		happenProp:(prop,init={})=>{
-			return mng.happen(_create_happening(
+		HappenProp:(prop,init={})=>{
+			return mng.Happen(_create_happening(
 				()=>prop,
 				()=>JSON.stringify(prop),
 				()=>new Error(JSON.stringify(prop)),
@@ -163,9 +164,9 @@ function _create_manager(prm,parent=null){
 			));
 		},
 
-		happenError:(err,init={})=>{
-			return mng.happen(_create_happening(
-				()=>{return YgEs.fromError(err)},
+		HappenError:(err,init={})=>{
+			return mng.Happen(_create_happening(
+				()=>{return YgEs.FromError(err)},
 				()=>''+err,
 				()=>err,
 				init

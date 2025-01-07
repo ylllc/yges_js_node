@@ -15,7 +15,7 @@ const scenaria=[
 	{
 		title:'Root Async Proc',
 		proc:async (tool)=>{
-			let proc=tool.Launcher.launch({
+			let proc=tool.Launcher.Launch({
 				happen:tool.Launcher.HappenTo,
 				cb_start:(user)=>{
 					user.lock=true;
@@ -34,25 +34,25 @@ const scenaria=[
 			Test.chk_strict(1,count_start,'bgn - start');
 			Test.chk_strict(0,count_done,'bgn - done');
 			Test.chk_strict(0,count_abort,'bgn - abort');
-			Test.chk_strict(true,proc.isStarted(),'bgn - started');
-			Test.chk_strict(false,proc.isFinished(),'bgn - finished');
-			Test.chk_strict(false,proc.isAborted(),'bgn - aborted');
-			Test.chk_strict(false,proc.isEnd(),'bgn - end');
+			Test.chk_strict(true,proc.IsStarted(),'bgn - started');
+			Test.chk_strict(false,proc.IsFinished(),'bgn - finished');
+			Test.chk_strict(false,proc.IsAborted(),'bgn - aborted');
+			Test.chk_strict(false,proc.IsEnd(),'bgn - end');
 
 			proc.User.lock=false;
-			await proc.toPromise(false);
+			await proc.ToPromise(false);
 
 			Test.chk_strict(1,count_start,'end - start');
 			Test.chk_strict(1,count_done,'end - done');
 			Test.chk_strict(0,count_abort,'end - abort');
-			Test.chk_strict(true,proc.isStarted(),'end - started');
-			Test.chk_strict(true,proc.isFinished(),'end - finished');
-			Test.chk_strict(false,proc.isAborted(),'end - aborted');
-			Test.chk_strict(true,proc.isEnd(),'end - end');
+			Test.chk_strict(true,proc.IsStarted(),'end - started');
+			Test.chk_strict(true,proc.IsFinished(),'end - finished');
+			Test.chk_strict(false,proc.IsAborted(),'end - aborted');
+			Test.chk_strict(true,proc.IsEnd(),'end - end');
 
-			await tool.Launcher.toPromise();
+			await tool.Launcher.ToPromise();
 		},
 	},
 ]
 
-Test.run(scenaria);
+Test.Run(scenaria);

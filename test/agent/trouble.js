@@ -12,42 +12,42 @@ let agent=null;
 let handle=null;
 
 let workset={
-	user:{count:1},
+	user:{Count:1},
 	cb_open:(agent)=>{
-		agent.User.count+=1;
-		Test.chk_strict(agent.User.count,2);
+		agent.User.Count+=1;
+		Test.chk_strict(agent.User.Count,2);
 	},
 	cb_ready:(agent)=>{
-		agent.User.count+=2;
-		Test.chk_strict(agent.User.count,4);
+		agent.User.Count+=2;
+		Test.chk_strict(agent.User.Count,4);
 
 		// happening after ready 
 		// required resolving it to recover 
-		agent.getHappeningManager().happenMsg('Test Hap.');
+		agent.GetHappeningManager().HappenMsg('Test Hap.');
 	},
 	poll_healthy:(agent)=>{
-		agent.User.count+=4;
-		Test.chk_strict(agent.User.count,11);
+		agent.User.Count+=4;
+		Test.chk_strict(agent.User.Count,11);
 
-		handle.close();
+		handle.Close();
 	},
 	poll_trouble:(agent)=>{
-		agent.User.count+=3;
-		Test.chk_strict(agent.User.count,7);
+		agent.User.Count+=3;
+		Test.chk_strict(agent.User.Count,7);
 
 		// resolve all happenings in target HappeningManager 
-		let hm=agent.getHappeningManager();
-		hm.poll((hap)=>{
-			hap.resolve();
+		let hm=agent.GetHappeningManager();
+		hm.Poll((hap)=>{
+			hap.Resolve();
 		});
 	},
 	cb_close:(agent)=>{
-		agent.User.count+=5;
-		Test.chk_strict(agent.User.count,16);
+		agent.User.Count+=5;
+		Test.chk_strict(agent.User.Count,16);
 	},
 	cb_finish:(agent)=>{
-		agent.User.count+=6;
-		Test.chk_strict(agent.User.count,22);
+		agent.User.Count+=6;
+		Test.chk_strict(agent.User.Count,22);
 	},
 	cb_abort:(agent)=>{
 		Test.chk_never("don't step");
@@ -59,21 +59,21 @@ const scenaria=[
 		title:'Agent Repairing',
 		proc:async (tool)=>{
 			workset.launcher=tool.Launcher;
-			workset.happen=tool.Launcher.HappenTo.createLocal({
+			workset.happen=tool.Launcher.HappenTo.CreateLocal({
 				happen:(hap)=>{
-//					tool.Log.fatal(hap.toString(),hap.getProp());
+//					tool.Log.Fatal(hap.ToString(),hap.GetProp());
 				},
 			});
 
-			agent=AgentManager.standby(workset);
-			Test.chk_strict(agent.User.count,1);
+			agent=AgentManager.StandBy(workset);
+			Test.chk_strict(agent.User.Count,1);
 
-			handle=agent.fetch();
-			handle.open();
+			handle=agent.Fetch();
+			handle.Open();
 
-			await tool.Launcher.toPromise();
+			await tool.Launcher.ToPromise();
 		},
 	},
 ]
 
-Test.run(scenaria);
+Test.Run(scenaria);

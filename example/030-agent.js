@@ -12,42 +12,42 @@ import Log from '../api/logger.js';
 import HappeningManager from '../api/happening.js';
 
 // start the Engine 
-Engine.start();
+Engine.Start();
 
 // for Worker environment 
-let launcher=Engine.createLauncher();
-let hap_local=HappeningManager.createLocal({
-	happen:(hap)=>{Log.fatal(hap.GetProp());},
+let launcher=Engine.CreateLauncher();
+let hap_local=HappeningManager.CreateLocal({
+	happen:(hap)=>{Log.Fatal(hap.GetProp());},
 });
 
 // Worker1 
 let workset1={
 	launcher:launcher,
 	happen:hap_local,
-	user:{count:0},
+	user:{Count:0},
 	cb_open:(worker)=>{
-		Log.info('Worker1 open');
-		worker.waitFor(()=>{
-			return ++worker.User.count>=10;
+		Log.Info('Worker1 open');
+		worker.WaitFor(()=>{
+			return ++worker.User.Count>=10;
 		});
 	},
 	cb_back:(worker)=>{
-		Log.info('Worker1 back');
-		worker.waitFor(()=>{
-			return --worker.User.count<=0;
+		Log.Info('Worker1 back');
+		worker.WaitFor(()=>{
+			return --worker.User.Count<=0;
 		});
 	},
 	cb_ready:(worker)=>{
-		Log.info('Worker1 ready');
+		Log.Info('Worker1 ready');
 	},
 	cb_close:(worker)=>{
-		Log.info('Worker1 close');
-		worker.waitFor(()=>{
-			return --worker.User.count<=0;
+		Log.Info('Worker1 close');
+		worker.WaitFor(()=>{
+			return --worker.User.Count<=0;
 		});
 	},
 	cb_finish:(worker)=>{
-		Log.info('Worker1 finish');
+		Log.Info('Worker1 finish');
 	},
 }
 
@@ -56,44 +56,44 @@ let workset1={
 let workset2={
 	launcher:launcher,
 	happen:hap_local,
-	user:{count:0},
-	dependencies:{w1:AgentManager.launch(workset1)},
+	user:{Count:0},
+	dependencies:{w1:AgentManager.Launch(workset1)},
 	cb_open:(worker)=>{
-		Log.info('Worker2 open');
-		worker.User.count=0;
+		Log.Info('Worker2 open');
+		worker.User.Count=0;
 	},
 	cb_ready:(worker)=>{
-		Log.info('Worker2 ready');
+		Log.Info('Worker2 ready');
 	},
 	cb_close:(worker)=>{
-		Log.info('Worker2 close');
+		Log.Info('Worker2 close');
 	},
 	cb_finish:(worker)=>{
-		Log.info('Worker2 finish');
+		Log.Info('Worker2 finish');
 	},
 };
 
 (async ()=>{
 	// Worker1 runs 
-	let wh1=AgentManager.run(workset1);
-	Timing.delay(300,()=>{wh1.close();});
-	await Timing.syncKit(20,()=>{return !wh1.isBusy();}).promise();
+	let wh1=AgentManager.Run(workset1);
+	Timing.Delay(300,()=>{wh1.Close();});
+	await Timing.SyncKit(20,()=>{return !wh1.IsBusy();}).promise();
 
 	// Worker1 reopen&restart 
-	await Timing.delayKit(100,()=>{wh1.open();}).promise();
-	await Timing.delayKit(150,()=>{
-		Log.info('Worker1 restart');
-		wh1.restart();
+	await Timing.DelayKit(100,()=>{wh1.Open();}).promise();
+	await Timing.DelayKit(150,()=>{
+		Log.Info('Worker1 restart');
+		wh1.Restart();
 	}).promise();
-	await Timing.delayKit(500,()=>{wh1.close();}).promise();
-	await Timing.syncKit(20,()=>{return !wh1.isBusy();}).promise();
+	await Timing.DelayKit(500,()=>{wh1.Close();}).promise();
+	await Timing.SyncKit(20,()=>{return !wh1.IsBusy();}).promise();
 
 	// Worker2 open 
 	// and depndencies too 
-	let wh2=AgentManager.run(workset2);
-	Timing.delay(200,()=>{wh2.close();});
+	let wh2=AgentManager.Run(workset2);
+	Timing.Delay(200,()=>{wh2.Close();});
 
-	launcher.sync((dmy)=>{
-		Engine.shutdown();
+	launcher.Sync((dmy)=>{
+		Engine.ShutDown();
 	});
 })();

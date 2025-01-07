@@ -135,4 +135,4 @@ const scenaria=[
 	},
 ]
 
-Test.run(scenaria);
+Test.Run(scenaria);

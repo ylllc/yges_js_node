@@ -26,7 +26,7 @@ let workset={
 	},
 	poll_healthy:(agent)=>{
 		if(++agent.User.count>=10){
-			handle.close();
+			handle.Close();
 		}
 	},
 	poll_trouble:(agent)=>{
@@ -52,14 +52,14 @@ const scenaria=[
 			workset.launcher=tool.Launcher;
 			workset.happen=tool.Launcher.HappenTo;
 
-			agent=AgentManager.standby(workset);
+			agent=AgentManager.StandBy(workset);
 			Test.chk_strict(agent.User.count,1);
-			handle=agent.fetch();
-			handle.open();
+			handle=agent.Fetch();
+			handle.Open();
 
-			await tool.Launcher.toPromise();
+			await tool.Launcher.ToPromise();
 		},
 	},
 ]
 
-Test.run(scenaria);
+Test.Run(scenaria);

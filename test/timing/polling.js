@@ -17,7 +17,7 @@ const scenaria=[
 		proc:async (tool)=>{
 			let t1=Date.now();
 			await new Promise((ok,ng)=>{
-				let cancel=Timing.poll(interval,()=>{
+				let cancel=Timing.Poll(interval,()=>{
 					if(++count>=10){
 						cancel();
 						ok();
@@ -31,4 +31,4 @@ const scenaria=[
 	},
 ]
 
-Test.run(scenaria);
+Test.Run(scenaria);

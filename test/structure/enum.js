@@ -14,7 +14,7 @@ const scenaria=[
 		proc:async (tool)=>{
 			let src=['ZERO','ONE','TWO','THREE','FOUR',
 				'FIVE','SIX','SEVEN','EIGHT','NINE','TEN']
-			let lut=YgEs.createEnum(src);
+			let lut=YgEs.CreateEnum(src);
 
 			Test.chk_strict(src.length,Object.keys(lut).length,'must same size');
 			for(let i=0;i<src.length;++i){
@@ -24,4 +24,4 @@ const scenaria=[
 	},
 ]
 
-Test.run(scenaria);
+Test.Run(scenaria);

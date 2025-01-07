@@ -12,14 +12,14 @@ const scenaria=[
 	{
 		title:'Plain Agent',
 		proc:async (tool)=>{
-			let w=AgentManager.standby({});
-			Test.chk_strict(w.isOpen(),false);
-			let h=w.open();
-			Test.chk_strict(w.isOpen(),true);
-			h.close();
-			Test.chk_strict(w.isOpen(),false);
+			let w=AgentManager.StandBy({});
+			Test.chk_strict(w.IsOpen(),false);
+			let h=w.Open();
+			Test.chk_strict(w.IsOpen(),true);
+			h.Close();
+			Test.chk_strict(w.IsOpen(),false);
 		},
 	},
 ]
 
-Test.run(scenaria);
+Test.Run(scenaria);

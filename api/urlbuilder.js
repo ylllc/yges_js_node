@@ -14,18 +14,18 @@ const _rx_proplayer=/^(.+)\[(.*)\]$/;
 function _set_prop(prop,ks,v){
 
 	if(ks.length<1){
-		prop.set(v);
+		prop.Set(v);
 		return;
 	}
 
 	let k=ks.pop();
 	if(k===''){
-		let sub=PropTree.create({},true);
-		prop.push(sub);
+		let sub=PropTree.Create({},true);
+		prop.Push(sub);
 		_set_prop(sub,ks,v);
 	}
 	else{
-		let sub=prop.dig(k);
+		let sub=prop.Dig(k);
 		_set_prop(sub,ks,v);
 	}
 }
@@ -190,10 +190,10 @@ let URLBuilder=YgEs.URLBuilder={
 
 		if(src=='')return {}
 
-		let prop=PropTree.create({},true);
+		let prop=PropTree.Create({},true);
 		for(let s of src.split('&')){
 			let kv=s.split('=',2);
-			if(kv.length<2)prop.push(s);
+			if(kv.length<2)prop.Push(s);
 			else{
 				let ks=[]
 				let k=kv[0];
@@ -207,7 +207,7 @@ let URLBuilder=YgEs.URLBuilder={
 				_set_prop(prop,ks,decodeURIComponent(kv[1]));
 			}
 		}
-		return prop.export();
+		return prop.Export();
 	},
 	bakeKey:(k,base)=>{
 		k=encodeURIComponent(k);

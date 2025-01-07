@@ -16,7 +16,7 @@ const scenaria=[
 		proc:async ()=>{
 			let t1=Date.now();
 			await new Promise((ok,ng)=>{
-				Timing.delay(interval,()=>{
+				Timing.Delay(interval,()=>{
 					let dt=Date.now()-t1;
 					Test.chk_great(dt,interval-(interval>>3));
 					ok();
@@ -28,7 +28,7 @@ const scenaria=[
 		title:'Cancel Delay',
 		proc:async (tool)=>{
 			await new Promise((ok,ng)=>{
-				let cancel=Timing.delay(interval,()=>{
+				let cancel=Timing.Delay(interval,()=>{
 					Test.never('not cancelled');
 				});
 				cancel();
@@ -38,4 +38,4 @@ const scenaria=[
 	},
 ]
 
-Test.run(scenaria);
+Test.Run(scenaria);

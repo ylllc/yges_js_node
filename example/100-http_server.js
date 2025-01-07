@@ -34,24 +34,24 @@ var route2=HTTPServer.serve(PUBLIC_ROOT,{
 	},
 });
 
-Engine.start();
+Engine.Start();
 
-var srv1=HTTPServer.setup(8080,route1).fetch();
-var srv2=HTTPServer.setup(8888,route2).fetch();
+var srv1=HTTPServer.setup(8080,route1).Fetch();
+var srv2=HTTPServer.setup(8888,route2).Fetch();
 
 (async()=>{
-	await File.save(LIFEFILE,'');
+	await File.Save(LIFEFILE,'');
 
-	srv1.open();
-	srv2.open();
+	srv1.Open();
+	srv2.Open();
 
-	await Timing.syncKit(100,()=>{
-		return !File.exists(LIFEFILE);
+	await Timing.SyncKit(100,()=>{
+		return !File.Exists(LIFEFILE);
 	}).promise();
 
-	srv1.close();
-	srv2.close();
+	srv1.Close();
+	srv2.Close();
 
-	await Engine.toPromise();
-	Engine.shutdown();
+	await Engine.ToPromise();
+	Engine.ShutDown();
 })();

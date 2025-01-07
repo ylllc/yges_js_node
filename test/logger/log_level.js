@@ -22,25 +22,25 @@ const scenaria=[
 			// set showable log level 
 			Log.Showable=Log.LEVEL.DEBUG;
 			Test.chk_strict(count,0,'not logged yet');
-			Log.debug('?');
+			Log.Debug('?');
 			Test.chk_strict(count,1,'debug logged');
-			Log.trace('?'); // will be suppressed 
+			Log.Trace('?'); // will be suppressed 
 			Test.chk_strict(count,1,'trace log  suppressed');
 
 			// local log (unoverriden)
-			let ll1=Log.createLocal('Local1',Log.LEVEL.WARN);
-			ll1.notice('?') // will be suppressed ;
+			let ll1=Log.CreateLocal('Local1',Log.LEVEL.WARN);
+			ll1.Notice('?') // will be suppressed ;
 			Test.chk_strict(count,1,'notice log suppressed');
-			ll1.warn('?');
+			ll1.Warn('?');
 			Test.chk_strict(count,2,'warn logged');
 
 			// local log (instant overriden)
-			let ll2=Log.createLocal('Local2');
+			let ll2=Log.CreateLocal('Local2');
 			ll2.Way=(msg)=>{count+=10;};
-			ll2.info('?');
+			ll2.Info('?');
 			Test.chk_strict(count,12,'local logged');
 		},
 	},
 ]
 
-Test.run(scenaria);
+Test.Run(scenaria);

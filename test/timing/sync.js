@@ -17,7 +17,7 @@ const scenaria=[
 		proc:async (tool)=>{
 			let t1=Date.now();
 			await new Promise((ok,ng)=>{
-				let cancel=Timing.sync(interval,()=>{
+				let cancel=Timing.Sync(interval,()=>{
 					return ++count>=10;
 				},
 				()=>{ok();},
@@ -32,17 +32,17 @@ const scenaria=[
 		title:'Abort Sync',
 		proc:async (tool)=>{
 			await new Promise((ok,ng)=>{
-				let cancel=Timing.sync(interval,()=>{
+				let cancel=Timing.Sync(interval,()=>{
 					return ++count>=20;
 				},
 				()=>{ng();},
 				()=>{ok();});
 
-				Timing.delay(interval*5,()=>{cancel();});
+				Timing.Delay(interval*5,()=>{cancel();});
 				Test.chk_less(count,16);
 			});
 		},
 	},
 ]
 
-Test.run(scenaria);
+Test.Run(scenaria);

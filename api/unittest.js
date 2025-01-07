@@ -16,7 +16,7 @@ import Log from './logger.js';
 
 function _cpmsg(msg,v1,op,v2){
 	if(!msg)msg='Test Mismatch:';
-	return ''+msg+' ('+YgEs.inspect(v1)+' '+op+' '+YgEs.inspect(v2)+')';
+	return ''+msg+' ('+YgEs.Inspect(v1)+' '+op+' '+YgEs.Inspect(v2)+')';
 }
 
 export default {
@@ -33,7 +33,7 @@ export default {
 	chk_great_eq:(v1,v2,msg=null)=>{assert(v1>=v2,_cpmsg(msg,v1,'>=',v2))},
 	chk_approx:(v1,v2,range,msg=null)=>{assert(((v1<v2)?(v2-v1):(v1-v2))<=range,_cpmsg(msg,v1,'>=',v2))},
 
-	run:(scn)=>{
+	Run:(scn)=>{
 
 		// when there is even one pickup 
 		// unselected tests are ignored. 
@@ -44,27 +44,27 @@ export default {
 			break;
 		}
 
-		Timing.toPromise((ok,ng)=>{
+		Timing.ToPromise((ok,ng)=>{
 			for(let t of scn){
 				if(puf && !t.pickup)continue;
 				if(t.filter!==undefined && !t.filter)continue;
 
 				let err=null;
 				test(t.title,async ()=>{
-					Engine.start();
-					let launcher=Engine.createLauncher();
+					Engine.Start();
+					let launcher=Engine.CreateLauncher();
 					try{
 						await t.proc({
 							Launcher:launcher,
-							Log:Log.createLocal(t.title,Log.LEVEL.DEBUG),
+							Log:Log.CreateLocal(t.title,Log.LEVEL.DEBUG),
 						});
 					}
 					catch(e){
 						err=e;
 					}
-					launcher.abort();
-					if(!launcher.HappenTo.isCleaned())throw YgEs.inspect(launcher.HappenTo.getInfo());
-					Engine.stop();
+					launcher.Abort();
+					if(!launcher.HappenTo.IsCleaned())throw YgEs.Inspect(launcher.HappenTo.GetInfo());
+					Engine.Stop();
 
 					if(err)throw err;
 				});

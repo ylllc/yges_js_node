@@ -36,7 +36,7 @@ const scenaria=[
 		title:'Test With Waiting',
 		proc: async (tool)=>{
 			//  the process is kept until all test were ended 
-			await Timing.delayKit(2000).promise();
+			await Timing.DelayKit(2000).promise();
 			Test.chk(true, 'delayed test');
 		},
 	},
@@ -52,4 +52,4 @@ const scenaria=[
 	// more ...
 ]
 
-Test.run(scenaria);
+Test.Run(scenaria);

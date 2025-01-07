@@ -12,46 +12,46 @@ let agent=null;
 let handle=null;
 
 let workset1={
-	user:{count:0},
+	user:{Count:0},
 	cb_open:(agent)=>{
-		Test.chk_strict(agent.isBusy(),true);
-		agent.waitFor(()=>{
-			return ++agent.User.count>=10;
+		Test.chk_strict(agent.IsBusy(),true);
+		agent.WaitFor(()=>{
+			return ++agent.User.Count>=10;
 		});
 	},
 	cb_ready:(agent)=>{
-		Test.chk_strict(agent.isReady(),true);
+		Test.chk_strict(agent.IsReady(),true);
 	},
 	cb_close:(agent)=>{
-		Test.chk_strict(agent.isReady(),false);
-		agent.waitFor(()=>{
-			return ++agent.User.count>=20;
+		Test.chk_strict(agent.IsReady(),false);
+		agent.WaitFor(()=>{
+			return ++agent.User.Count>=20;
 		});
 	},
 	cb_finish:(agent)=>{
-		Test.chk_strict(agent.isBusy(),false);
+		Test.chk_strict(agent.IsBusy(),false);
 	},
 }
 
 let workset2={
-	user:{count:0},
-	dependencies:{w1:AgentManager.launch(workset1)},
+	user:{Count:0},
+	dependencies:{w1:AgentManager.Launch(workset1)},
 	cb_open:(agent)=>{
-		Test.chk_strict(agent.isBusy(),true);
+		Test.chk_strict(agent.IsBusy(),true);
 	},
 	cb_ready:(agent)=>{
-		Test.chk_strict(agent.isReady(),true);
-		Test.chk_strict(agent.getDependencies().w1.isOpenAgent(),true);
+		Test.chk_strict(agent.IsReady(),true);
+		Test.chk_strict(agent.GetDependencies().w1.IsOpenAgent(),true);
 
-		handle.close();
-		Test.chk_strict(agent.isOpen(),false);
+		handle.Close();
+		Test.chk_strict(agent.IsOpen(),false);
 	},
 	cb_close:(agent)=>{
-		Test.chk_strict(agent.isReady(),false);
-		Test.chk_strict(agent.getDependencies().w1.isOpenAgent(),false);
+		Test.chk_strict(agent.IsReady(),false);
+		Test.chk_strict(agent.GetDependencies().w1.IsOpenAgent(),false);
 	},
 	cb_finish:(agent)=>{
-		Test.chk_strict(agent.isBusy(),false);
+		Test.chk_strict(agent.IsBusy(),false);
 	},
 }
 
@@ -64,13 +64,13 @@ const scenaria=[
 			workset1.happen=tool.Launcher.HappenTo;
 			workset2.happen=tool.Launcher.HappenTo;
 
-			agent=AgentManager.standby(workset2);
-			handle=agent.open();
-			Test.chk_strict(agent.isOpen(),true);
+			agent=AgentManager.StandBy(workset2);
+			handle=agent.Open();
+			Test.chk_strict(agent.IsOpen(),true);
 
-			await tool.Launcher.toPromise();
+			await tool.Launcher.ToPromise();
 		},
 	},
 ]
 
-Test.run(scenaria);
+Test.Run(scenaria);

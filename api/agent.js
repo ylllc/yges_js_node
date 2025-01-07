@@ -31,15 +31,15 @@ function _standby(prm){
 	let wait=[]
 
 	let name=prm.name??'YgEs_Agent';
-	let happen=prm.happen??HappeningManager.createLocal();
-	let launcher=prm.launcher??Engine.createLauncher();
+	let happen=prm.happen??HappeningManager.CreateLocal();
+	let launcher=prm.launcher??Engine.CreateLauncher();
 	let user=prm.user??{};
 
-	let getInfo=(phase)=>{
+	let GetInfo=(phase)=>{
 		return {
 			name:name,
 			phase:phase,
-			state:ctrl?ctrl.getCurState():'NONE',
+			state:ctrl?ctrl.GetCurState():'NONE',
 			wait:wait,
 			user:user,
 		}
@@ -51,8 +51,8 @@ function _standby(prm){
 				if(opencount<1)return true;
 				restart=false;
 
-				happen.cleanup();
-				return happen.isCleaned()?'UP':'REPAIR';
+				happen.CleanUp();
+				return happen.IsCleaned()?'UP':'REPAIR';
 			},
 		},
 		'BROKEN':{
@@ -72,18 +72,18 @@ function _standby(prm){
 					if(prm.cb_repair)prm.cb_repair(agent);
 				}
 				catch(e){
-					happen.happenProp({
+					happen.HappenProp({
 						class:'YgEs_Agent_Error',
 						cause:'throw from a callback',
-						src:getInfo('cb_repair'),
-						err:YgEs.fromError(e),
+						src:GetInfo('cb_repair'),
+						err:YgEs.FromError(e),
 					});
 				}
 			},
 			poll_keep:(ctrl,user)=>{
 				if(opencount<1){
-					happen.cleanup();
-					return happen.isCleaned()?'IDLE':'BROKEN';
+					happen.CleanUp();
+					return happen.IsCleaned()?'IDLE':'BROKEN';
 				}
 
 				// wait for delendencies 
@@ -94,11 +94,11 @@ function _standby(prm){
 						cont.push(d);
 					}
 					catch(e){
-						happen.happenProp({
+						happen.HappenProp({
 							class:'YgEs_Agent_Error',
 							cause:'throw from a callback',
-							src:getInfo('wait for repair'),
-							err:YgEs.fromError(e),
+							src:GetInfo('wait for repair'),
+							err:YgEs.FromError(e),
 						});
 					}
 				}
@@ -106,8 +106,8 @@ function _standby(prm){
 				if(wait.length>0)return;
 
 				// wait for all happens resolved 
-				happen.cleanup();
-				if(happen.isCleaned())return 'UP';
+				happen.CleanUp();
+				if(happen.IsCleaned())return 'UP';
 			},
 		},
 		'DOWN':{
@@ -117,12 +117,12 @@ function _standby(prm){
 
 					// down dependencles too 
 					if(prm.dependencies){
-						Util.safeDictIter(prm.dependencies,(k,h)=>{
-							h.close();
+						Util.SafeDictIter(prm.dependencies,(k,h)=>{
+							h.Close();
 						});
 					}
 
-					if(ctrl.getPrevState()=='UP'){
+					if(ctrl.GetPrevState()=='UP'){
 						if(prm.cb_back)prm.cb_back(agent);
 					}
 					else{
@@ -130,11 +130,11 @@ function _standby(prm){
 					}
 				}
 				catch(e){
-					happen.happenProp({
+					happen.HappenProp({
 						class:'YgEs_Agent_Error',
 						cause:'throw from a callback',
-						src:getInfo('cb_close'),
-						err:YgEs.fromError(e),
+						src:GetInfo('cb_close'),
+						err:YgEs.FromError(e),
 					});
 				}
 			},
@@ -148,18 +148,18 @@ function _standby(prm){
 						cont.push(d);
 					}
 					catch(e){
-						happen.happenProp({
+						happen.HappenProp({
 							class:'YgEs_Agent_Error',
 							cause:'throw from a callback',
-							src:getInfo('wait for down'),
-							err:YgEs.fromError(e),
+							src:GetInfo('wait for down'),
+							err:YgEs.FromError(e),
 						});
 					}
 				}
 				wait=cont;
 				if(wait.length>0)return null;
-				happen.cleanup();
-				return happen.isCleaned()?'IDLE':'BROKEN';
+				happen.CleanUp();
+				return happen.IsCleaned()?'IDLE':'BROKEN';
 			},
 		},
 		'UP':{
@@ -170,18 +170,18 @@ function _standby(prm){
 
 					// up dependencles too 
 					if(prm.dependencies){
-						Util.safeDictIter(prm.dependencies,(k,h)=>{
-							h.open();
-							wait.push(()=>h.isReady());
+						Util.SafeDictIter(prm.dependencies,(k,h)=>{
+							h.Open();
+							wait.push(()=>h.IsReady());
 						});
 					}
 				}
 				catch(e){
-					happen.happenProp({
+					happen.HappenProp({
 						class:'YgEs_Agent_Error',
 						cause:'throw from a callback',
-						src:getInfo('cb_open'),
-						err:YgEs.fromError(e),
+						src:GetInfo('cb_open'),
+						err:YgEs.FromError(e),
 					});
 				}
 			},
@@ -196,31 +196,31 @@ function _standby(prm){
 						cont.push(d);
 					}
 					catch(e){
-						happen.happenProp({
+						happen.HappenProp({
 							class:'YgEs_Agent_Error',
 							cause:'throw from a callback',
-							src:getInfo('wait for up'),
-							err:YgEs.fromError(e),
+							src:GetInfo('wait for up'),
+							err:YgEs.FromError(e),
 						});
 					}
 				}
 				wait=cont;
-				if(!happen.isCleaned())return 'DOWN';
+				if(!happen.IsCleaned())return 'DOWN';
 				if(wait.length<1)return 'HEALTHY';
 			},
 			cb_end:(ctrl,user)=>{
-				if(ctrl.getNextState()=='HEALTHY'){
+				if(ctrl.GetNextState()=='HEALTHY'){
 					try{
 						// mark ready before callback 
 						ready=true;
 						if(prm.cb_ready)prm.cb_ready(agent);
 					}
 					catch(e){
-						happen.happenProp({
+						happen.HappenProp({
 							class:'YgEs_Agent_Error',
 							cause:'throw from a callback',
-							src:getInfo('cb_ready'),
-							err:YgEs.fromError(e),
+							src:GetInfo('cb_ready'),
+							err:YgEs.FromError(e),
 						});
 					}
 				}
@@ -232,17 +232,17 @@ function _standby(prm){
 					ready=false;
 					return 'DOWN';
 				}
-				if(!happen.isCleaned())return 'TROUBLE';
+				if(!happen.IsCleaned())return 'TROUBLE';
 
 				try{
 					if(prm.poll_healthy)prm.poll_healthy(agent);
 				}
 				catch(e){
-					happen.happenProp({
+					happen.HappenProp({
 						class:'YgEs_Agent_Error',
 						cause:'throw from a callback',
-						src:getInfo('poll_healthy'),
-						err:YgEs.fromError(e),
+						src:GetInfo('poll_healthy'),
+						err:YgEs.FromError(e),
 					});
 					return 'TROUBLE';
 				}
@@ -254,21 +254,21 @@ function _standby(prm){
 					ready=false;
 					return 'DOWN';
 				}
-				happen.cleanup();
-				if(happen.isCleaned())return 'HEALTHY';
+				happen.CleanUp();
+				if(happen.IsCleaned())return 'HEALTHY';
 
 				try{
 					if(prm.poll_trouble)prm.poll_trouble(agent);
 				}
 				catch(e){
-					happen.happenProp({
+					happen.HappenProp({
 						class:'YgEs_Agent_Error',
 						cause:'throw from a callback',
-						src:getInfo('poll_trouble'),
-						err:YgEs.fromError(e),
+						src:GetInfo('poll_trouble'),
+						err:YgEs.FromError(e),
 					});
 				}
-				if(!happen.isCleaned())return 'HALT';
+				if(!happen.IsCleaned())return 'HALT';
 			},
 		},
 		'HALT':{
@@ -280,8 +280,8 @@ function _standby(prm){
 					ready=false;
 					return 'DOWN';
 				}
-				happen.cleanup();
-				if(happen.isCleaned())return 'HEALTHY';
+				happen.CleanUp();
+				if(happen.IsCleaned())return 'HEALTHY';
 			},
 			cb_end:(ctrl,user)=>{
 				halt=false;
@@ -293,25 +293,25 @@ function _standby(prm){
 		name:name,
 		User:user,
 
-		isOpen:()=>opencount>0,
-		isBusy:()=>!!ctrl || opencount>0,
-		isReady:()=>ready && opencount>0,
-		isHalt:()=>halt,
-		getState:()=>ctrl?ctrl.getCurState():'NONE',
+		IsOpen:()=>opencount>0,
+		IsBusy:()=>!!ctrl || opencount>0,
+		IsReady:()=>ready && opencount>0,
+		IsHalt:()=>halt,
+		GetState:()=>ctrl?ctrl.GetCurState():'NONE',
 
-		getLauncher:()=>{return launcher;},
-		getHappeningManager:()=>{return happen;},
-		getDependencies:()=>{return prm.dependencies;},
+		GetLauncher:()=>{return launcher;},
+		GetHappeningManager:()=>{return happen;},
+		GetDependencies:()=>{return prm.dependencies;},
 
-		waitFor:(cb)=>{wait.push(cb)},
-		restart:()=>{restart=true;},
+		WaitFor:(cb)=>{wait.push(cb)},
+		Restart:()=>{restart=true;},
 
-		fetch:()=>{
+		Fetch:()=>{
 			return handle(agent);
 		},
-		open:()=>{
-			let h=agent.fetch();
-			h.open();
+		Open:()=>{
+			let h=agent.Fetch();
+			h.Open();
 			return h;
 		},
 	}
@@ -324,7 +324,7 @@ function _standby(prm){
 		cb_done:(user)=>{
 			ctrl=null;
 			aborted=false;
-			if(prm.cb_finish)prm.cb_finish(agent,happen.isCleaned());
+			if(prm.cb_finish)prm.cb_finish(agent,happen.IsCleaned());
 		},
 		cb_abort:(user)=>{
 			ctrl=null;
@@ -338,28 +338,28 @@ function _standby(prm){
 		let h={
 			name:name+'_Handle',
 
-			getAgent:()=>{return agent;},
-			getLauncher:()=>agent.getLauncher(),
-			getHappeningManager:()=>agent.getHappeningManager(),
-			getDependencies:()=>agent.getDependencies(),
+			GetAgent:()=>{return agent;},
+			GetLauncher:()=>agent.GetLauncher(),
+			GetHappeningManager:()=>agent.GetHappeningManager(),
+			GetDependencies:()=>agent.GetDependencies(),
 
-			isOpenHandle:()=>in_open,
-			isOpenAgent:()=>agent.isOpen(),
-			isBusy:()=>agent.isBusy(),
-			isReady:()=>agent.isReady(),
-			isHalt:()=>agent.isHalt(),
-			getState:()=>agent.getState(),
+			IsOpenHandle:()=>in_open,
+			IsOpenAgent:()=>agent.IsOpen(),
+			IsBusy:()=>agent.IsBusy(),
+			IsReady:()=>agent.IsReady(),
+			IsHalt:()=>agent.IsHalt(),
+			GetState:()=>agent.GetState(),
 
-			restart:()=>agent.restart(),
+			Restart:()=>agent.Restart(),
 
-			open:()=>{
+			Open:()=>{
 				if(!in_open){
 					in_open=true;
 					++opencount;
 				}
-				if(!ctrl)ctrl=StateMachine.run('IDLE',states,ctrlopt);
+				if(!ctrl)ctrl=StateMachine.Run('IDLE',states,ctrlopt);
 			},
-			close:()=>{
+			Close:()=>{
 				if(!in_open)return;
 				in_open=false;
 				--opencount;
@@ -375,9 +375,9 @@ YgEs.AgentManager={
 	name:'YgEs_AgentManager',
 	User:{},
 
-	standby:_standby,
-	launch:(prm)=>{return _standby(prm).fetch();},
-	run:(prm)=>{return _standby(prm).open();},
+	StandBy:_standby,
+	Launch:(prm)=>{return _standby(prm).Fetch();},
+	Run:(prm)=>{return _standby(prm).Open();},
 }
 
 })();
