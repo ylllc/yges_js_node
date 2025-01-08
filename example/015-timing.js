@@ -3,10 +3,10 @@
 // © 2024-5 Yggdrasil Leaves, LLC.        //
 //        All rights reserved.            //
 
-// Examples: Basic Timing Features ------ //
-
 import Log from '../api/logger.js';
 import Timing from '../api/timing.js';
+
+// Examples: Basic Timing Features ------ //
 
 // delaying 
 Timing.Delay(500,()=>{
@@ -55,13 +55,13 @@ Timing.Delay(300,()=>{
 (async ()=>{
 	// cancellable delay on Promise 
 	let dk=Timing.DelayKit(500);
-	await dk.promise();
+	await dk.ToPromise();
 	Log.Info('delayed on Promise');
 
 	try{
 		dk=Timing.DelayKit(500);
-		Timing.Delay(350,()=>{dk.cancel();});
-		await dk.promise();
+		Timing.Delay(350,()=>{dk.Cancel();});
+		await dk.ToPromise();
 		Log.Info('delayed on Promise');
 	}
 	catch(e){
@@ -72,14 +72,14 @@ Timing.Delay(300,()=>{
 	let go=false;
 	let sk=Timing.SyncKit(50,()=>{return go;});
 	Timing.Delay(100,()=>{go=true;});
-	await sk.promise();
+	await sk.ToPromise();
 	Log.Info('synchronized on Promise');
 
 	try{
 		go=false;
 		sk=Timing.SyncKit(50,()=>{return go;});
-		Timing.Delay(100,()=>{sk.cancel();});
-		await sk.promise();
+		Timing.Delay(100,()=>{sk.Cancel();});
+		await sk.ToPromise();
 	}
 	catch(e){
 		Log.Warn(e.message);

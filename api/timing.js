@@ -115,8 +115,8 @@ let Timing=YgEs.Timing={
 
 	DelayKit:(ms,cb_done=null,cb_cancel=null)=>{
 		let kit={}
-		kit.promise=()=>Timing.ToPromise((ok,ng)=>{
-			kit.cancel=Timing.Delay(ms,
+		kit.ToPromise=()=>Timing.ToPromise((ok,ng)=>{
+			kit.Cancel=Timing.Delay(ms,
 			()=>{
 				if(cb_done)cb_done();
 				ok();
@@ -129,8 +129,8 @@ let Timing=YgEs.Timing={
 	},
 	SyncKit:(ms,cb_chk,cb_done=null,cb_abort=null)=>{
 		let kit={}
-		kit.promise=()=>Timing.ToPromise((ok,ng)=>{
-			kit.cancel=Timing.Sync(ms,cb_chk,
+		kit.ToPromise=()=>Timing.ToPromise((ok,ng)=>{
+			kit.Cancel=Timing.Sync(ms,cb_chk,
 			()=>{
 				if(cb_done)ok(cb_done());
 				else ok();

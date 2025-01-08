@@ -3,10 +3,10 @@
 // © 2024-5 Yggdrasil Leaves, LLC.        //
 //        All rights reserved.            //
 
-// Example: Property Tree --------------- //
-
 import PropTree from '../api/proptree.js';
 import Log from '../api/logger.js';
+
+// Example: Property Tree --------------- //
 
 console.log('--- Mono Mode ---');
 let t1=PropTree.Create();

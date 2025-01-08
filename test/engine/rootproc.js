@@ -13,42 +13,42 @@ let count_abort=0;
 
 const scenaria=[
 	{
-		title:'Root Async Proc',
-		proc:async (tool)=>{
+		Title:'Root Async Proc',
+		Proc:async (tool)=>{
 			let proc=tool.Launcher.Launch({
-				happen:tool.Launcher.HappenTo,
-				cb_start:(user)=>{
+				HappenTo:tool.Launcher.HappenTo,
+				OnStart:(user)=>{
 					user.lock=true;
 					++count_start;
 				},
-				cb_poll:(user)=>{
+				OnPoll:(user)=>{
 					return user.lock;
 				},
-				cb_done:(user)=>{
+				OnDone:(user)=>{
 					++count_done;
 				},
-				cb_abort:(user)=>{
+				OnAbort:(user)=>{
 					++count_abort;
 				}
 			});
-			Test.chk_strict(1,count_start,'bgn - start');
-			Test.chk_strict(0,count_done,'bgn - done');
-			Test.chk_strict(0,count_abort,'bgn - abort');
-			Test.chk_strict(true,proc.IsStarted(),'bgn - started');
-			Test.chk_strict(false,proc.IsFinished(),'bgn - finished');
-			Test.chk_strict(false,proc.IsAborted(),'bgn - aborted');
-			Test.chk_strict(false,proc.IsEnd(),'bgn - end');
+			Test.ChkStrict(1,count_start,'bgn - start');
+			Test.ChkStrict(0,count_done,'bgn - done');
+			Test.ChkStrict(0,count_abort,'bgn - abort');
+			Test.ChkStrict(true,proc.IsStarted(),'bgn - started');
+			Test.ChkStrict(false,proc.IsFinished(),'bgn - finished');
+			Test.ChkStrict(false,proc.IsAborted(),'bgn - aborted');
+			Test.ChkStrict(false,proc.IsEnd(),'bgn - end');
 
 			proc.User.lock=false;
 			await proc.ToPromise(false);
 
-			Test.chk_strict(1,count_start,'end - start');
-			Test.chk_strict(1,count_done,'end - done');
-			Test.chk_strict(0,count_abort,'end - abort');
-			Test.chk_strict(true,proc.IsStarted(),'end - started');
-			Test.chk_strict(true,proc.IsFinished(),'end - finished');
-			Test.chk_strict(false,proc.IsAborted(),'end - aborted');
-			Test.chk_strict(true,proc.IsEnd(),'end - end');
+			Test.ChkStrict(1,count_start,'end - start');
+			Test.ChkStrict(1,count_done,'end - done');
+			Test.ChkStrict(0,count_abort,'end - abort');
+			Test.ChkStrict(true,proc.IsStarted(),'end - started');
+			Test.ChkStrict(true,proc.IsFinished(),'end - finished');
+			Test.ChkStrict(false,proc.IsAborted(),'end - aborted');
+			Test.ChkStrict(true,proc.IsEnd(),'end - end');
 
 			await tool.Launcher.ToPromise();
 		},

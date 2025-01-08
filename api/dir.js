@@ -12,33 +12,33 @@ import FS from './fs_ll.js';
 // Directory Control -------------------- //
 (()=>{ // local namespace 
 
-function _target(dir,prepare,parent){
+function _target(dir,parent){
 
 	var ws={
-		name:'YgEs_DirTarget',
-		happen:Dir.HappenTo.CreateLocal(),
+		Name:'YgEs.DirTarget',
+		HappenTo:(Dir.HappenTo??HappeningManager).CreateLocal(),
 
-		cb_open:(wk)=>{
+		OnOpen:(wk)=>{
 			var done=false;
 			Timing.FromPromise(
-				FS.MkDir(dir,{recursive:prepare}),
+				FS.MkDir(dir,{recursive:true}),
 				(res)=>{
 					done=true;
 				},
 				(err)=>{
-					ws.happen.HappenError(err);
+					ws.HappenTo.HappenError(err);
 				}
 			);
 			wk.WaitFor(()=>{return done;});
 		},
 	};
-	if(parent)ws.delendencies=[parent.Fetch()]
+	if(parent)ws.Dependencies=[parent.Fetch()]
 	var wk=AgentManager.StandBy(ws);
 
 	wk.GetPath=()=>dir;
 	wk.Exists=()=>FS.Exists(dir);
 	wk.Relative=(path)=>dir+'/'+path;
-	wk.SubDir=(path,prepare)=>_target(dir+'/'+path,prepare,wk);
+	wk.SubDir=(path)=>_target(dir+'/'+path,wk);
 	wk.Glob=(ptn='*')=>FS.Glob(dir,ptn);
 
 	return wk;
@@ -55,7 +55,7 @@ let Dir=YgEs.Dir={
 	Stat:(path,opt={})=>FS.Stat(path,opt),
 	MkDir:(path,opt={})=>FS.MkDir(path,opt),
 
-	Target:(dir,prepare)=>_target(dir,prepare,null),
+	Target:(dir)=>_target(dir,null),
 }
 
 })();

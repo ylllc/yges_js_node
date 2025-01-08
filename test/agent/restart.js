@@ -12,27 +12,27 @@ let agent=null;
 let handle=null;
 
 let workset={
-	user:{Count:1},
-	cb_open:(agent)=>{
+	User:{Count:1},
+	OnOpen:(agent)=>{
 		++agent.User.Count;
 	},
-	cb_ready:(agent)=>{
+	OnReady:(agent)=>{
 		if(agent.User.Count<10)agent.Restart();
 		else handle.Close();
 	},
-	cb_finish:(agent)=>{
-		Test.chk_strict(agent.User.Count,10);
+	OnFinish:(agent)=>{
+		Test.ChkStrict(agent.User.Count,10);
 	},
 }
 
 const scenaria=[
 	{
-		title:'Agent Restart',
-		proc:async (tool)=>{
-			workset.launcher=tool.Launcher;
-			workset.happen=tool.Launcher.HappenTo;
+		Title:'Agent Restart',
+		Proc:async (tool)=>{
+			workset.Launcher=tool.Launcher;
+			workset.HappenTo=tool.Launcher.HappenTo;
 			agent=AgentManager.StandBy(workset);
-			Test.chk_strict(agent.User.Count,1);
+			Test.ChkStrict(agent.User.Count,1);
 			handle=agent.Fetch();
 			handle.Open();
 

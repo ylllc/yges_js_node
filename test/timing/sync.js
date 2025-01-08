@@ -13,8 +13,8 @@ let count=0;
 
 const scenaria=[
 	{
-		title:'Sync',
-		proc:async (tool)=>{
+		Title:'Sync',
+		Proc:async (tool)=>{
 			let t1=Date.now();
 			await new Promise((ok,ng)=>{
 				let cancel=Timing.Sync(interval,()=>{
@@ -24,13 +24,13 @@ const scenaria=[
 				()=>{ng();});
 			});
 			let dt=Date.now()-t1;
-			Test.chk_great(dt,interval*9);
-			Test.chk_strict(count,10);
+			Test.ChkGreat(dt,interval*9);
+			Test.ChkStrict(count,10);
 		},
 	},
 	{
-		title:'Abort Sync',
-		proc:async (tool)=>{
+		Title:'Abort Sync',
+		Proc:async (tool)=>{
 			await new Promise((ok,ng)=>{
 				let cancel=Timing.Sync(interval,()=>{
 					return ++count>=20;
@@ -39,7 +39,7 @@ const scenaria=[
 				()=>{ok();});
 
 				Timing.Delay(interval*5,()=>{cancel();});
-				Test.chk_less(count,16);
+				Test.ChkLess(count,16);
 			});
 		},
 	},

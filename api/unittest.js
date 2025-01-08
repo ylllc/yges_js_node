@@ -23,15 +23,15 @@ export default {
 	name:'YgEs_UnitTest',
 	User:{},
 
-	never:(msg=null)=>{assert(false,msg)},
-	chk:(cond,msg=null)=>{assert(cond,msg)},
-	chk_loose:(v1,v2,msg=null)=>{assert(v1==v2,_cpmsg(msg,v1,'==',v2))},
-	chk_strict:(v1,v2,msg=null)=>{assert(v1===v2,_cpmsg(msg,v1,'===',v2))},
-	chk_less:(v1,v2,msg=null)=>{assert(v1<v2,_cpmsg(msg,v1,'<',v2))},
-	chk_less_eq:(v1,v2,msg=null)=>{assert(v1<=v2,_cpmsg(msg,v1,'<=',v2))},
-	chk_great:(v1,v2,msg=null)=>{assert(v1>v2,_cpmsg(msg,v1,'>',v2))},
-	chk_great_eq:(v1,v2,msg=null)=>{assert(v1>=v2,_cpmsg(msg,v1,'>=',v2))},
-	chk_approx:(v1,v2,range,msg=null)=>{assert(((v1<v2)?(v2-v1):(v1-v2))<=range,_cpmsg(msg,v1,'>=',v2))},
+	Never:(msg=null)=>{assert(false,msg)},
+	Chk:(cond,msg=null)=>{assert(cond,msg)},
+	ChkLoose:(v1,v2,msg=null)=>{assert(v1==v2,_cpmsg(msg,v1,'==',v2))},
+	ChkStrict:(v1,v2,msg=null)=>{assert(v1===v2,_cpmsg(msg,v1,'===',v2))},
+	ChkLess:(v1,v2,msg=null)=>{assert(v1<v2,_cpmsg(msg,v1,'<',v2))},
+	ChkLessEq:(v1,v2,msg=null)=>{assert(v1<=v2,_cpmsg(msg,v1,'<=',v2))},
+	ChkGreat:(v1,v2,msg=null)=>{assert(v1>v2,_cpmsg(msg,v1,'>',v2))},
+	ChkGreatEq:(v1,v2,msg=null)=>{assert(v1>=v2,_cpmsg(msg,v1,'>=',v2))},
+	ChkApprox:(v1,v2,range,msg=null)=>{assert(((v1<v2)?(v2-v1):(v1-v2))<=range,_cpmsg(msg,v1,'>=',v2))},
 
 	Run:(scn)=>{
 
@@ -39,31 +39,31 @@ export default {
 		// unselected tests are ignored. 
 		let puf=false;
 		for(let t of scn){
-			if(!t.pickup)continue;
+			if(!t.PickUp)continue;
 			puf=true;
 			break;
 		}
 
 		Timing.ToPromise((ok,ng)=>{
 			for(let t of scn){
-				if(puf && !t.pickup)continue;
-				if(t.filter!==undefined && !t.filter)continue;
+				if(puf && !t.PickUp)continue;
+				if(t.Filter!==undefined && !t.Filter)continue;
 
 				let err=null;
-				test(t.title,async ()=>{
+				test(t.Title,async ()=>{
 					Engine.Start();
 					let launcher=Engine.CreateLauncher();
 					try{
-						await t.proc({
+						await t.Proc({
 							Launcher:launcher,
-							Log:Log.CreateLocal(t.title,Log.LEVEL.DEBUG),
+							Log:Log.CreateLocal(t.Title,Log.LEVEL.DEBUG),
 						});
 					}
 					catch(e){
 						err=e;
 					}
 					launcher.Abort();
-					if(!launcher.HappenTo.IsCleaned())throw YgEs.Inspect(launcher.HappenTo.GetInfo());
+					if(!launcher.HappenTo.IsCleaned())throw new Error('Happen in Test: '+t.Title,{cause:launcher.HappenTo.GetInfo()});
 					Engine.Stop();
 
 					if(err)throw err;

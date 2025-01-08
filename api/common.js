@@ -22,6 +22,7 @@ YgEs.FromError=(err)=>{
 	return {
 		Name:err.name,
 		Msg:err.message,
+		Cause:err.cause,
 		File:err.fileName,
 		Line:err.lineNumber,
 		Col:err.columnNumber,

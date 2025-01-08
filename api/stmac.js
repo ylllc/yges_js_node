@@ -12,12 +12,12 @@ import HappeningManager from './happening.js';
 
 function _run(start,states={},opt={}){
 
-	let launcher=opt.launcher??YgEs.Engine;
+	let launcher=opt.Launcher??YgEs.Engine;
 	let cur=null;
 
-	let name=opt.name??'YgEs_Statemachine';
-	let happen=opt.happen??HappeningManager;
-	let user=opt.user??{};
+	let name=opt.Name??'YgEs.StateMachine';
+	let happen=opt.HappenTo??HappeningManager;
+	let user=opt.User??{};
 
 	let state_prev=null;
 	let state_cur=null;
@@ -25,7 +25,7 @@ function _run(start,states={},opt={}){
 
 	let ctrl={
 		name:name+'_Control',
-		User:{},
+		User:user,
 		GetHappeningManager:()=>happen,
 		GetPrevState:()=>state_prev,
 		GetCurState:()=>state_cur,
@@ -34,13 +34,12 @@ function _run(start,states={},opt={}){
 
 	let GetInfo=(phase)=>{
 		return {
-			name:name,
-			prev:state_prev,
-			cur:state_cur,
-			next:state_next,
-			phase:phase,
-			ctrl:ctrl.User,
-			user:user,
+			Name:name,
+			Prev:state_prev,
+			Cur:state_cur,
+			Next:state_next,
+			Phase:phase,
+			User:user,
 		}
 	}
 
@@ -56,7 +55,7 @@ function _run(start,states={},opt={}){
 		}
 		cur=states[state_next]??null;
 		if(!cur){
-			stmac.happen.HappenProp({
+			stmac.HappenTo.HappenProp({
 				class:'YgEs_Statemachine_Error',
 				cause:'state missing: '+state_next,
 				info:GetInfo('selecing'),
@@ -68,11 +67,11 @@ function _run(start,states={},opt={}){
 		state_cur=state_next;
 		state_next=null;
 		try{
-			if(cur.cb_start)cur.cb_start(ctrl,user);
+			if(cur.OnStart)cur.OnStart(ctrl,user);
 			poll_cur=poll_up;
 		}
 		catch(e){
-			stmac.happen.HappenProp({
+			stmac.HappenTo.HappenProp({
 				class:'YgEs_Statemachine_Error',
 				cause:'throw from a callback',
 				info:GetInfo('cb_start'),
@@ -85,10 +84,10 @@ function _run(start,states={},opt={}){
 	}
 	let poll_up=(user)=>{
 		try{
-			var r=cur.poll_up?cur.poll_up(ctrl,user):true;
+			var r=cur.OnPollInUp?cur.OnPollInUp(ctrl,user):true;
 		}
 		catch(e){
-			stmac.happen.HappenProp({
+			stmac.HappenTo.HappenProp({
 				class:'YgEs_Statemachine_Error',
 				cause:'throw from a callback',
 				info:GetInfo('poll_up'),
@@ -101,11 +100,11 @@ function _run(start,states={},opt={}){
 		else if(r===true){
 			try{
 				// normal transition 
-				if(cur.cb_ready)cur.cb_ready(ctrl,user);
+				if(cur.OnReady)cur.OnReady(ctrl,user);
 				poll_cur=poll_keep;
 			}
 			catch(e){
-				stmac.happen.HappenProp({
+				stmac.HappenTo.HappenProp({
 					class:'YgEs_Statemachine_Error',
 					cause:'throw from a callback',
 					info:GetInfo('cb_ready'),
@@ -124,10 +123,10 @@ function _run(start,states={},opt={}){
 	}
 	let poll_keep=(user)=>{
 		try{
-			var r=cur.poll_keep?cur.poll_keep(ctrl,user):true;
+			var r=cur.OnPollInKeep?cur.OnPollInKeep(ctrl,user):true;
 		}
 		catch(e){
-			stmac.happen.HappenProp({
+			stmac.HappenTo.HappenProp({
 				class:'YgEs_Statemachine_Error',
 				cause:'throw from a callback',
 				info:GetInfo('poll_keep'),
@@ -150,11 +149,11 @@ function _run(start,states={},opt={}){
 	}
 	let call_stop=(user)=>{
 		try{
-			if(cur.cb_stop)cur.cb_stop(ctrl,user);
+			if(cur.OnStop)cur.OnStop(ctrl,user);
 			poll_cur=poll_down;
 		}
 		catch(e){
-			stmac.happen.HappenProp({
+			stmac.HappenTo.HappenProp({
 				class:'YgEs_Statemachine_Error',
 				cause:'throw from a callback',
 				info:GetInfo('cb_stop'),
@@ -167,10 +166,10 @@ function _run(start,states={},opt={}){
 	}
 	let poll_down=(user)=>{
 		try{
-			var r=cur.poll_down?cur.poll_down(ctrl,user):true;
+			var r=cur.OnPollInDown?cur.OnPollInDown(ctrl,user):true;
 		}
 		catch(e){
-			stmac.happen.HappenProp({
+			stmac.HappenTo.HappenProp({
 				class:'YgEs_Statemachine_Error',
 				cause:'throw from a callback',
 				info:GetInfo('poll_down'),
@@ -192,11 +191,11 @@ function _run(start,states={},opt={}){
 	}
 	let call_end=(user)=>{
 		try{
-			if(cur.cb_end)cur.cb_end(ctrl,user);
+			if(cur.OnEnd)cur.OnEnd(ctrl,user);
 			call_start(user);
 		}
 		catch(e){
-			stmac.happen.HappenProp({
+			stmac.HappenTo.HappenProp({
 				class:'YgEs_Statemachine_Error',
 				cause:'throw from a callback',
 				info:GetInfo('cb_end'),
@@ -207,19 +206,19 @@ function _run(start,states={},opt={}){
 	}
 
 	let stmac={
-		name:name,
-		happen:happen,
-		user:user,
+		Name:name,
+		HappenTo:happen,
+		User:user,
 
-		cb_start:(user)=>{
+		OnStart:(user)=>{
 			call_start(user);
 		},
-		cb_poll:(user)=>{
+		OnPoll:(user)=>{
 			poll_cur(user);
 			return !!cur;
 		},
-		cb_done:opt.cb_done??'',
-		cb_abort:opt.cb_abort??'',
+		OnDone:opt.OnDone??'',
+		OnAbort:opt.OnAbort??'',
 	}
 
 	let proc=launcher.Launch(stmac);

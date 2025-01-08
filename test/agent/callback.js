@@ -12,48 +12,48 @@ let agent=null;
 let handle=null;
 
 let workset={
-	user:{count:1},
-	cb_open:(agent)=>{
+	User:{count:1},
+	OnOpen:(agent)=>{
 		agent.User.count+=1;
-		Test.chk_strict(agent.User.count,2);
+		Test.ChkStrict(agent.User.count,2);
 	},
-	cb_repair:(agent)=>{
-		Test.chk_never("don't step");
+	OnRepair:(agent)=>{
+		Test.Never("don't step");
 	},
-	cb_ready:(agent)=>{
+	OnReady:(agent)=>{
 		agent.User.count+=2;
-		Test.chk_strict(agent.User.count,4);
+		Test.ChkStrict(agent.User.count,4);
 	},
-	poll_healthy:(agent)=>{
+	OnPollInHealthy:(agent)=>{
 		if(++agent.User.count>=10){
 			handle.Close();
 		}
 	},
-	poll_trouble:(agent)=>{
-		Test.chk_never("don't step");
+	OnPollInTrouble:(agent)=>{
+		Test.Never("don't step");
 	},
-	cb_close:(agent)=>{
+	OnClose:(agent)=>{
 		agent.User.count+=3;
-		Test.chk_strict(agent.User.count,13);
+		Test.ChkStrict(agent.User.count,13);
 	},
-	cb_finish:(agent)=>{
+	OnFinish:(agent)=>{
 		agent.User.count+=4;
-		Test.chk_strict(agent.User.count,17);
+		Test.ChkStrict(agent.User.count,17);
 	},
-	cb_abort:(agent)=>{
-		Test.chk_never("don't step");
+	OnAbort:(agent)=>{
+		Test.Never("don't step");
 	},
 }
 
 const scenaria=[
 	{
-		title:'Agent Callback',
-		proc:async (tool)=>{
-			workset.launcher=tool.Launcher;
-			workset.happen=tool.Launcher.HappenTo;
+		Title:'Agent Callback',
+		Proc:async (tool)=>{
+			workset.Launcher=tool.Launcher;
+			workset.HappenTo=tool.Launcher.HappenTo;
 
 			agent=AgentManager.StandBy(workset);
-			Test.chk_strict(agent.User.count,1);
+			Test.ChkStrict(agent.User.count,1);
 			handle=agent.Fetch();
 			handle.Open();
 

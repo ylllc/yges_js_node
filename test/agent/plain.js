@@ -10,14 +10,14 @@ import AgentManager from '../../api/agent.js';
 
 const scenaria=[
 	{
-		title:'Plain Agent',
-		proc:async (tool)=>{
+		Title:'Plain Agent',
+		Proc:async (tool)=>{
 			let w=AgentManager.StandBy({});
-			Test.chk_strict(w.IsOpen(),false);
+			Test.ChkStrict(w.IsOpen(),false);
 			let h=w.Open();
-			Test.chk_strict(w.IsOpen(),true);
+			Test.ChkStrict(w.IsOpen(),true);
 			h.Close();
-			Test.chk_strict(w.IsOpen(),false);
+			Test.ChkStrict(w.IsOpen(),false);
 		},
 	},
 ]

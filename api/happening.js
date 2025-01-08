@@ -23,12 +23,12 @@ function _create_happening(cbprop,cbstr,cberr,init={}){
 
 	let resolved=false;
 	let abandoned=false;
-	let cb_resolved=init.cb_resolved??_default_resolved;
-	let cb_abandoned=init.cb_abandoned??_default_abandoned;
+	let onResolved=init.OnResolved??_default_resolved;
+	let onAbandoned=init.OnAbandoned??_default_abandoned;
 
 	let hap={
-		name:init.name??'YgEs_Happening',
-		User:init.user??{},
+		Name:init.Name??'YgEs.Happening',
+		User:init.User??{},
 
 		GetProp:cbprop,
 		ToString:cbstr,
@@ -41,7 +41,7 @@ function _create_happening(cbprop,cbstr,cberr,init={}){
 			if(resolved)return;
 			resolved=true;
 			abandoned=false;
-			if(cb_resolved)cb_resolved(hap);
+			if(onResolved)onResolved(hap);
 		},
 
 		IsAbandoned:()=>abandoned && !resolved,
@@ -49,7 +49,7 @@ function _create_happening(cbprop,cbstr,cberr,init={}){
 			if(resolved)return;
 			if(abandoned)return;
 			abandoned=true;
-			if(cb_abandoned)cb_abandoned(hap);
+			if(onAbandoned)onAbandoned(hap);
 		},
 	}
 	return hap;
@@ -60,10 +60,19 @@ function _create_manager(prm,parent=null){
 	let issues=[]
 	let children=[]
 
+	const onHappen=(hap)=>{
+		for(let hm=mng;hm;hm=hm.GetParent()){
+			if(!hm.OnHappen)continue;
+			hm.OnHappen(hap);
+			return;
+		}
+		_default_happened(hap);
+	}
+
 	let mng={
-		name:prm.name??'YgEs_HappeningManager',
-		CB_Happened:prm.happen??null,
-		User:prm.user??{},
+		name:prm.Name??'YgEs.HappeningManager',
+		OnHappen:prm.OnHappen??null,
+		User:prm.User??{},
 
 		CreateLocal:(prm={})=>{
 			let cm=_create_manager(prm,mng);
@@ -112,14 +121,14 @@ function _create_manager(prm,parent=null){
 		},
 
 		GetInfo:()=>{
-			let info={name:mng.name,_issues:[],_children:[]}
+			let info={Name:mng.name,Issues:[],Children:[]}
 			for(let hap of issues){
 				if(hap.IsResolved())continue;
-				info._issues.push({name:hap.name,prop:hap.GetProp()});
+				info.Issues.push({Name:hap.name,Prop:hap.GetProp()});
 			}
 			for(let sub of children){
 				let si=sub.GetInfo();
-				if(si._issues.length>0 || si._children.length>0)info._children.push(si);
+				if(si.Issues.length>0 || si.Children.length>0)info.Children.push(si);
 			}
 			return info;
 		},
@@ -136,14 +145,9 @@ function _create_manager(prm,parent=null){
 			}
 		},
 
-		_callHappened:(hap)=>{
-			if(mng.CB_Happened)mng.CB_Happened(hap);
-			else if(parent)parent._callHappened(hap);
-			else _default_happened(hap);
-		},
 		Happen:(hap)=>{
 			issues.push(hap);
-			mng._callHappened(hap);
+			onHappen(hap);
 			return hap;
 		},
 		HappenMsg:(msg,init={})=>{
@@ -176,7 +180,7 @@ function _create_manager(prm,parent=null){
 	return mng;
 }
 
-YgEs.HappeningManager=_create_manager('YgEs_GlobalHappeningManager');
+YgEs.HappeningManager=_create_manager({Name:'YgEs.GlobalHappeningManager'});
 
 })();
 export default YgEs.HappeningManager;

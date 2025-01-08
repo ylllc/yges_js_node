@@ -10,52 +10,52 @@ import StateMachine from '../../api/stmac.js';
 
 const states={
 	'Test':{
-		cb_start:(ctx,user)=>{
-			Test.chk_strict(++user.Count,2,'cb_start called illegular');
+		OnStart:(ctx,user)=>{
+			Test.ChkStrict(++user.Count,2,'cb_start called illegular');
 		},
-		poll_up:(ctx,user)=>{
-			Test.chk_great(++user.Count,2,'poll_up called illegular');
-			Test.chk_less_eq(user.Count,10,'poll_up called illegular');
+		OnPollInUp:(ctx,user)=>{
+			Test.ChkGreat(++user.Count,2,'poll_up called illegular');
+			Test.ChkLessEq(user.Count,10,'poll_up called illegular');
 			return (user.Count<10)?null:true;
 		},
-		cb_ready:(ctx,user)=>{
-			Test.chk_strict(++user.Count,11,'cb_ready called illegular');
+		OnReady:(ctx,user)=>{
+			Test.ChkStrict(++user.Count,11,'cb_ready called illegular');
 		},
-		poll_keep:(ctx,user)=>{
-			Test.chk_great(++user.Count,11,'poll_keep called illegular');
-			Test.chk_less_eq(user.Count,20,'poll_keep called illegular');
+		OnPollInKeep:(ctx,user)=>{
+			Test.ChkGreat(++user.Count,11,'poll_keep called illegular');
+			Test.ChkLessEq(user.Count,20,'poll_keep called illegular');
 			return (user.Count<20)?null:true;
 		},
-		cb_stop:(ctx,user)=>{
-			Test.chk_strict(++user.Count,21,'cb_stop called illegular');
+		OnStop:(ctx,user)=>{
+			Test.ChkStrict(++user.Count,21,'cb_stop called illegular');
 		},
-		poll_down:(ctx,user)=>{
-			Test.chk_great(++user.Count,21,'poll_down called illegular');
-			Test.chk_less_eq(user.Count,30,'poll_down called illegular');
+		OnPollInDown:(ctx,user)=>{
+			Test.ChkGreat(++user.Count,21,'poll_down called illegular');
+			Test.ChkLessEq(user.Count,30,'poll_down called illegular');
 			return (user.Count<30)?null:true;
 		},
-		cb_end:(ctx,user)=>{
-			Test.chk_strict(++user.Count,31,'cb_end called illegular');
+		OnEnd:(ctx,user)=>{
+			Test.ChkStrict(++user.Count,31,'cb_end called illegular');
 		},
 	},
 }
 
 let opt={
-	user:{Count:1}, // share in states 
-	cb_done:(user)=>{
-		Test.chk_strict(++user.Count,32,'cb_done called illegular');
+	User:{Count:1}, // share in states 
+	OnDone:(user)=>{
+		Test.ChkStrict(++user.Count,32,'cb_done called illegular');
 	},
-	cb_abort:(user)=>{
-		Test.never('states abend');
+	OnAbort:(user)=>{
+		Test.Never('states abend');
 	},
 }
 
 const scenaria=[
 	{
-		title:'1 State Running',
-		proc:async (tool)=>{
-			opt.launcher=tool.Launcher;
-			opt.happen=tool.Launcher.HappenTo;
+		Title:'1 State Running',
+		Proc:async (tool)=>{
+			opt.Launcher=tool.Launcher;
+			opt.HappenTo=tool.Launcher.HappenTo;
 
 			// run with undefined state 
 			// abort soon 

@@ -30,24 +30,24 @@ function _standby(prm){
 	let aborted=false;
 	let wait=[]
 
-	let name=prm.name??'YgEs_Agent';
-	let happen=prm.happen??HappeningManager.CreateLocal();
-	let launcher=prm.launcher??Engine.CreateLauncher();
-	let user=prm.user??{};
+	let name=prm.Name??'YgEs.Agent';
+	let happen=prm.HappenTo??HappeningManager.CreateLocal();
+	let launcher=prm.Launcher??Engine.CreateLauncher();
+	let user=prm.User??{};
 
 	let GetInfo=(phase)=>{
 		return {
-			name:name,
-			phase:phase,
-			state:ctrl?ctrl.GetCurState():'NONE',
-			wait:wait,
-			user:user,
+			Name:name,
+			Phase:phase,
+			State:ctrl?ctrl.GetCurState():'NONE',
+			Wait:wait,
+			User:user,
 		}
 	}
 
 	let states={
 		'IDLE':{
-			poll_keep:(ctrl,user)=>{
+			OnPollInKeep:(ctrl,user)=>{
 				if(opencount<1)return true;
 				restart=false;
 
@@ -56,7 +56,7 @@ function _standby(prm){
 			},
 		},
 		'BROKEN':{
-			poll_keep:(ctrl,user)=>{
+			OnPollInKeep:(ctrl,user)=>{
 				if(opencount<1)return true;
 				restart=false;
 
@@ -64,23 +64,23 @@ function _standby(prm){
 			},
 		},
 		'REPAIR':{
-			cb_start:(ctrl,user)=>{
+			OnStart:(ctrl,user)=>{
 
 				try{
 					//start repairing 
 					wait=[]
-					if(prm.cb_repair)prm.cb_repair(agent);
+					if(prm.OnRepair)prm.OnRepair(agent);
 				}
 				catch(e){
 					happen.HappenProp({
 						class:'YgEs_Agent_Error',
 						cause:'throw from a callback',
-						src:GetInfo('cb_repair'),
+						src:GetInfo('OnRepair'),
 						err:YgEs.FromError(e),
 					});
 				}
 			},
-			poll_keep:(ctrl,user)=>{
+			OnPollInKeep:(ctrl,user)=>{
 				if(opencount<1){
 					happen.CleanUp();
 					return happen.IsCleaned()?'IDLE':'BROKEN';
@@ -111,34 +111,36 @@ function _standby(prm){
 			},
 		},
 		'DOWN':{
-			cb_start:(ctrl,user)=>{
+			OnStart:(ctrl,user)=>{
+				let back=false;
 				try{
 					wait=[]
 
 					// down dependencles too 
-					if(prm.dependencies){
-						Util.SafeDictIter(prm.dependencies,(k,h)=>{
+					if(prm.Dependencies){
+						Util.SafeDictIter(prm.Dependencies,(k,h)=>{
 							h.Close();
 						});
 					}
 
 					if(ctrl.GetPrevState()=='UP'){
-						if(prm.cb_back)prm.cb_back(agent);
+						back=true;
+						if(prm.OnBack)prm.OnBack(agent);
 					}
 					else{
-						if(prm.cb_close)prm.cb_close(agent);
+						if(prm.OnClose)prm.OnClose(agent);
 					}
 				}
 				catch(e){
 					happen.HappenProp({
 						class:'YgEs_Agent_Error',
 						cause:'throw from a callback',
-						src:GetInfo('cb_close'),
+						src:GetInfo(back?'OnBack':'OnClose'),
 						err:YgEs.FromError(e),
 					});
 				}
 			},
-			poll_keep:(ctrl,user)=>{
+			OnPollInKeep:(ctrl,user)=>{
 
 				// wait for delendencies 
 				let cont=[]
@@ -163,14 +165,14 @@ function _standby(prm){
 			},
 		},
 		'UP':{
-			cb_start:(ctrl,user)=>{
+			OnStart:(ctrl,user)=>{
 				try{
 					wait=[]
-					if(prm.cb_open)prm.cb_open(agent);
+					if(prm.OnOpen)prm.OnOpen(agent);
 
 					// up dependencles too 
-					if(prm.dependencies){
-						Util.SafeDictIter(prm.dependencies,(k,h)=>{
+					if(prm.Dependencies){
+						Util.SafeDictIter(prm.Dependencies,(k,h)=>{
 							h.Open();
 							wait.push(()=>h.IsReady());
 						});
@@ -180,12 +182,12 @@ function _standby(prm){
 					happen.HappenProp({
 						class:'YgEs_Agent_Error',
 						cause:'throw from a callback',
-						src:GetInfo('cb_open'),
+						src:GetInfo('OnOpen'),
 						err:YgEs.FromError(e),
 					});
 				}
 			},
-			poll_keep:(user)=>{
+			OnPollInKeep:(user)=>{
 				if(opencount<1 || restart)return 'DOWN';
 
 				// wait for delendencies 
@@ -208,18 +210,18 @@ function _standby(prm){
 				if(!happen.IsCleaned())return 'DOWN';
 				if(wait.length<1)return 'HEALTHY';
 			},
-			cb_end:(ctrl,user)=>{
+			OnEnd:(ctrl,user)=>{
 				if(ctrl.GetNextState()=='HEALTHY'){
 					try{
 						// mark ready before callback 
 						ready=true;
-						if(prm.cb_ready)prm.cb_ready(agent);
+						if(prm.OnReady)prm.OnReady(agent);
 					}
 					catch(e){
 						happen.HappenProp({
 							class:'YgEs_Agent_Error',
 							cause:'throw from a callback',
-							src:GetInfo('cb_ready'),
+							src:GetInfo('OnReady'),
 							err:YgEs.FromError(e),
 						});
 					}
@@ -227,7 +229,7 @@ function _standby(prm){
 			},
 		},
 		'HEALTHY':{
-			poll_keep:(ctrl,user)=>{
+			OnPollInKeep:(ctrl,user)=>{
 				if(opencount<1 || restart){
 					ready=false;
 					return 'DOWN';
@@ -235,13 +237,13 @@ function _standby(prm){
 				if(!happen.IsCleaned())return 'TROUBLE';
 
 				try{
-					if(prm.poll_healthy)prm.poll_healthy(agent);
+					if(prm.OnPollInHealthy)prm.OnPollInHealthy(agent);
 				}
 				catch(e){
 					happen.HappenProp({
 						class:'YgEs_Agent_Error',
 						cause:'throw from a callback',
-						src:GetInfo('poll_healthy'),
+						src:GetInfo('OnPollInHealthy'),
 						err:YgEs.FromError(e),
 					});
 					return 'TROUBLE';
@@ -249,7 +251,7 @@ function _standby(prm){
 			},
 		},
 		'TROUBLE':{
-			poll_keep:(ctrl,user)=>{
+			OnPollInKeep:(ctrl,user)=>{
 				if(opencount<1 || restart){
 					ready=false;
 					return 'DOWN';
@@ -258,13 +260,13 @@ function _standby(prm){
 				if(happen.IsCleaned())return 'HEALTHY';
 
 				try{
-					if(prm.poll_trouble)prm.poll_trouble(agent);
+					if(prm.OnPollInTrouble)prm.OnPollInTrouble(agent);
 				}
 				catch(e){
 					happen.HappenProp({
 						class:'YgEs_Agent_Error',
 						cause:'throw from a callback',
-						src:GetInfo('poll_trouble'),
+						src:GetInfo('OnPollInTrouble'),
 						err:YgEs.FromError(e),
 					});
 				}
@@ -272,10 +274,10 @@ function _standby(prm){
 			},
 		},
 		'HALT':{
-			cb_start:(ctrl,user)=>{
+			OnStart:(ctrl,user)=>{
 				halt=true;
 			},
-			poll_keep:(ctrl,user)=>{
+			OnPollInKeep:(ctrl,user)=>{
 				if(opencount<1 || restart){
 					ready=false;
 					return 'DOWN';
@@ -283,7 +285,7 @@ function _standby(prm){
 				happen.CleanUp();
 				if(happen.IsCleaned())return 'HEALTHY';
 			},
-			cb_end:(ctrl,user)=>{
+			OnEnd:(ctrl,user)=>{
 				halt=false;
 			},
 		},
@@ -301,7 +303,7 @@ function _standby(prm){
 
 		GetLauncher:()=>{return launcher;},
 		GetHappeningManager:()=>{return happen;},
-		GetDependencies:()=>{return prm.dependencies;},
+		GetDependencies:()=>{return prm.Dependencies;},
 
 		WaitFor:(cb)=>{wait.push(cb)},
 		Restart:()=>{restart=true;},
@@ -317,19 +319,19 @@ function _standby(prm){
 	}
 
 	let ctrlopt={
-		name:name+'_Control',
-		happen:happen,
-		launcher:launcher,
+		Name:name+'_Control',
+		HappenTo:happen,
+		Launcher:launcher,
 		User:user,
-		cb_done:(user)=>{
+		OnDone:(user)=>{
 			ctrl=null;
 			aborted=false;
-			if(prm.cb_finish)prm.cb_finish(agent,happen.IsCleaned());
+			if(prm.OnFinish)prm.OnFinish(agent,happen.IsCleaned());
 		},
-		cb_abort:(user)=>{
+		OnAbort:(user)=>{
 			ctrl=null;
 			aborted=true;
-			if(prm.cb_abort)prm.cb_abort(agent);
+			if(prm.OnAbort)prm.OnAbort(agent);
 		},
 	}
 
@@ -372,7 +374,7 @@ function _standby(prm){
 }
 
 YgEs.AgentManager={
-	name:'YgEs_AgentManager',
+	name:'YgEs.AgentManager',
 	User:{},
 
 	StandBy:_standby,

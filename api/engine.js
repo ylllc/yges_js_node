@@ -14,27 +14,27 @@ import Timing from './timing.js';
 const DEFAULT_ROOT_CYCLE=20;
 const DEFAULT_LAUNCHER_CYCLE=20;
 const DEFAULT_SYNC_CYCLE=10;
-const CLASS_PROC='YgEs_Procedure';
-const CLASS_LAUNCHER='YgEs_Launcher';
-const CLASS_LAUNCHERPROC='YgEs_LauncherProc';
-const CLASS_DELAYPROC='YgEs_DelayProc';
-const CLASS_ROOT='YgEs_RootLauncher';
+const CLASS_PROC='YgEs.Procedure';
+const CLASS_LAUNCHER='YgEs.Launcher';
+const CLASS_LAUNCHERPROC='YgEs.LauncherProc';
+const CLASS_DELAYPROC='YgEs.DelayProc';
+const CLASS_ROOT='YgEs.RootLauncher';
 
 function _create_proc(prm){
 
-	let cb_start=prm.cb_start??null;
-	let cb_poll=prm.cb_poll;
-	let cb_done=prm.cb_done??null;
-	let cb_abort=prm.cb_abort??null;
+	let onStart=prm.OnStart??null;
+	let onPoll=prm.OnPoll;
+	let onDone=prm.OnDone??null;
+	let onAbort=prm.OnAbort??null;
 
 	let started=false;
 	let finished=false;
 	let aborted=false;
 
 	let proc={
-		name:prm.name??CLASS_PROC,
-		HappenTo:(prm.happen??HappeningManager).CreateLocal(),
-		User:prm.user??{},
+		name:prm.Name??CLASS_PROC,
+		HappenTo:(prm.HappenTo??HappeningManager).CreateLocal(),
+		User:prm.User??{},
 
 		IsStarted:()=>started,
 		IsFinished:()=>finished,
@@ -45,9 +45,9 @@ function _create_proc(prm){
 			if(started)return;
 			if(proc.IsEnd())return;
 			started=true;
-			if(cb_start){
+			if(onStart){
 				try{
-					cb_start(proc.User);
+					onStart(proc.User);
 				}
 				catch(e){
 					proc.HappenTo.HappenProp({
@@ -63,9 +63,9 @@ function _create_proc(prm){
 		Abort:()=>{
 			if(proc.IsEnd())return;
 			aborted=true;
-			if(cb_abort){
+			if(onAbort){
 				try{
-					cb_abort(proc.User);
+					onAbort(proc.User);
 				}
 				catch(e){
 					proc.HappenTo.HappenProp({
@@ -87,7 +87,7 @@ function _create_proc(prm){
 		Poll:()=>{
 			if(proc.IsEnd())return false;
 			try{
-				if(cb_poll(proc.User))return true;
+				if(onPoll(proc.User))return true;
 			}
 			catch(e){
 				proc.HappenTo.HappenProp({
@@ -99,9 +99,9 @@ function _create_proc(prm){
 				proc.Abort();
 				return false;
 			}
-			if(cb_done){
+			if(onDone){
 				try{
-					cb_done(proc.User);
+					onDone(proc.User);
 					finished=true;
 				}
 				catch(e){
@@ -169,11 +169,11 @@ function _yges_enginge_create_launcher(prm){
 	let active=[]
 
 	let lnc={
-		name:prm.name??CLASS_LAUNCHER,
-		HappenTo:(prm.happen??HappeningManager).CreateLocal(),
-		Limit:prm.limit??-1,
-		Cycle:prm.cycle??DEFAULT_LAUNCHER_CYCLE,
-		User:prm.user??{},
+		name:prm.Name??CLASS_LAUNCHER,
+		HappenTo:(prm.HappenTo??HappeningManager).CreateLocal(),
+		Limit:prm.Limit??-1,
+		Cycle:prm.Cycle??DEFAULT_LAUNCHER_CYCLE,
+		User:prm.User??{},
 
 		IsEnd:()=>{
 			if(launched.length>0)return false;
@@ -212,13 +212,13 @@ function _yges_enginge_create_launcher(prm){
 				return;
 			}
 			if(!_working){
-				Log.Notice('the Engine not startted. call Start() to run.');
+				Log.Notice('the Engine not started. call Start() to run.');
 			}
 			if(abandoned){
-				if(prm.cb_abort)prm.cb_abort();
+				if(prm.OnAbort)prm.OnAbort();
 				return;
 			}
-			if(!prm.cb_poll){
+			if(!prm.OnPoll){
 				lnc.HappenTo.HappenProp({
 					class:CLASS_LAUNCHER,
 					cause:'empty pollee',
@@ -312,12 +312,12 @@ function _yges_enginge_create_launcher(prm){
 		Delay:(time,cb_done,cb_abort=null)=>{
 			let until=new Date(Date.now()+time);
 			return lnc.Launch({
-					name:CLASS_DELAYPROC,
-					cb_poll:(user)=>{
+					Name:CLASS_DELAYPROC,
+					OnPoll:(user)=>{
 						return Date.now()<until;
 					},
-					cb_done:cb_done,
-					cb_abort:cb_abort??cb_done,
+					OnDone:cb_done,
+					OnAbort:cb_abort??cb_done,
 				});
 		},
 	}
@@ -325,8 +325,8 @@ function _yges_enginge_create_launcher(prm){
 }
 
 let Engine=YgEs.Engine=_yges_enginge_create_launcher({
-	name:CLASS_ROOT,
-	cycle:DEFAULT_ROOT_CYCLE,
+	Name:CLASS_ROOT,
+	Cycle:DEFAULT_ROOT_CYCLE,
 });
 
 let _working=false;

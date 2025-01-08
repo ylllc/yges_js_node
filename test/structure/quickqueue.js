@@ -15,60 +15,60 @@ function create(/*...*/){
 
 const scenaria=[
 	{
-		title:'Empty Queue',
-		proc:async (tool)=>{
+		Title:'Empty Queue',
+		Proc:async (tool)=>{
 			var q=QuickQueue.Create([]);
 
-			Test.chk_strict(0,q.Count());
-			Test.chk_strict(0,q.Pos());
-			Test.chk_strict(true,q.IsEnd());
-			Test.chk_strict(undefined,q.Peek());
-			Test.chk_strict(undefined,q.Next());
-			Test.chk_strict(0,q.Pos());
+			Test.ChkStrict(0,q.Count());
+			Test.ChkStrict(0,q.Pos());
+			Test.ChkStrict(true,q.IsEnd());
+			Test.ChkStrict(undefined,q.Peek());
+			Test.ChkStrict(undefined,q.Next());
+			Test.ChkStrict(0,q.Pos());
 		},
 	},
 	{
-		title:'Array Queue',
-		proc:async (tool)=>{
+		Title:'Array Queue',
+		Proc:async (tool)=>{
 			var q=QuickQueue.Create([2,'ABC',-7]);
 
-			Test.chk_strict(3,q.Count());
-			Test.chk_strict(0,q.Pos());
-			Test.chk_strict(false,q.IsEnd());
-			Test.chk_strict(2,q.Peek());
-			Test.chk_strict(2,q.Next());
-			Test.chk_strict(1,q.Pos());
-			Test.chk_strict('ABC',q.Next());
-			Test.chk_strict(2,q.Pos());
-			Test.chk_strict(false,q.IsEnd());
-			Test.chk_strict(-7,q.Next());
-			Test.chk_strict(3,q.Pos());
-			Test.chk_strict(true,q.IsEnd());
+			Test.ChkStrict(3,q.Count());
+			Test.ChkStrict(0,q.Pos());
+			Test.ChkStrict(false,q.IsEnd());
+			Test.ChkStrict(2,q.Peek());
+			Test.ChkStrict(2,q.Next());
+			Test.ChkStrict(1,q.Pos());
+			Test.ChkStrict('ABC',q.Next());
+			Test.ChkStrict(2,q.Pos());
+			Test.ChkStrict(false,q.IsEnd());
+			Test.ChkStrict(-7,q.Next());
+			Test.ChkStrict(3,q.Pos());
+			Test.ChkStrict(true,q.IsEnd());
 		},
 	},
 	{
-		title:'Argument Queue',
-		proc:async (tool)=>{
+		Title:'Argument Queue',
+		Proc:async (tool)=>{
 			var q=create(5,'T',[false,true],null);
-			Test.chk_strict(4,q.Count());
-			Test.chk_strict(0,q.Pos());
-			Test.chk_strict(5,q.Next());
-			Test.chk_strict('T',q.Next());
+			Test.ChkStrict(4,q.Count());
+			Test.ChkStrict(0,q.Pos());
+			Test.ChkStrict(5,q.Next());
+			Test.ChkStrict('T',q.Next());
 			q.Reset();
-			Test.chk_strict(0,q.Pos());
-			Test.chk_strict(5,q.Peek());
+			Test.ChkStrict(0,q.Pos());
+			Test.ChkStrict(5,q.Peek());
 		},
 	},
 	{
-		title:'After Push',
-		proc:async (tool)=>{
+		Title:'After Push',
+		Proc:async (tool)=>{
 			var a=[]
 			var q=QuickQueue.Create(a);
-			Test.chk_strict(0,q.Count());
-			Test.chk_strict(0,q.Pos());
+			Test.ChkStrict(0,q.Count());
+			Test.ChkStrict(0,q.Pos());
 			a.push(-12);
-			Test.chk_strict(1,q.Count());
-			Test.chk_strict(-12,q.Next());
+			Test.ChkStrict(1,q.Count());
+			Test.ChkStrict(-12,q.Next());
 		},
 	},
 ]

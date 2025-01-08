@@ -14,15 +14,15 @@ import Log from '../api/logger.js';
 Engine.Start();
 
 // prepare diretories 
-let basedir=Dir.Target('..',false);
-let tmpdir=basedir.SubDir('tmp',true);
+let basedir=Dir.Target('..');
+let tmpdir=basedir.SubDir('tmp');
 
 // start async procedure 
 (async()=>{
 	// wait for tmpdir ready 
 	Log.Info(tmpdir.GetPath()+': '+(tmpdir.Exists()?'already':'not'));
 	let h_tmpdir=tmpdir.Open();
-	await Timing.SyncKit(100,()=>{return h_tmpdir.IsReady()}).promise();
+	await Timing.SyncKit(100,()=>{return h_tmpdir.IsReady()}).ToPromise();
 	Log.Info(tmpdir.GetPath()+': '+(tmpdir.Exists()?'ready':'not'));
 
 	// quick accesses 

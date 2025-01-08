@@ -3,10 +3,10 @@
 // © 2024-5 Yggdrasil Leaves, LLC.        //
 //        All rights reserved.            //
 
-// Examples: Quick Queue ---------------- //
-
 import QuickQueue from '../api/quickqueue.js';
 import Log from '../api/logger.js';
+
+// Examples: Quick Queue ---------------- //
 
 function test(){
 

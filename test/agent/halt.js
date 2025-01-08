@@ -14,56 +14,56 @@ let agent2=null;
 let handle2=null;
 
 let workset1={
-	name:'Test Rescuee',
-	user:{Count:1},
-	cb_open:(agent)=>{
+	Name:'Test Rescuee',
+	User:{Count:1},
+	OnOpen:(agent)=>{
 		agent.User.Count+=1;
-		Test.chk_strict(agent.User.Count,2);
+		Test.ChkStrict(agent.User.Count,2);
 	},
-	cb_ready:(agent)=>{
+	OnReady:(agent)=>{
 		agent.User.Count+=2;
-		Test.chk_strict(agent.User.Count,4);
+		Test.ChkStrict(agent.User.Count,4);
 
 		// happening after ready 
 		// required resolving it to recover 
 		agent.GetHappeningManager().HappenMsg('Test Hap.');
 	},
-	poll_healthy:(agent)=>{
+	OnPollInHealthy:(agent)=>{
 		agent.User.Count+=4;
-		Test.chk_strict(agent.User.Count,11);
+		Test.ChkStrict(agent.User.Count,11);
 
 		handle1.Close();
 	},
-	poll_trouble:(agent)=>{
+	OnPollInTrouble:(agent)=>{
 		agent.User.Count+=3;
-		Test.chk_strict(agent.User.Count,7);
+		Test.ChkStrict(agent.User.Count,7);
 
 		// more happening in poll_trouble() 
 		// this agent locked down and stop polling until cleaned up 
 		agent.GetHappeningManager().HappenMsg('More Test Hap.');
 	},
-	cb_close:(agent)=>{
+	OnClose:(agent)=>{
 		agent.User.Count+=5;
-		Test.chk_strict(agent.User.Count,16);
+		Test.ChkStrict(agent.User.Count,16);
 	},
-	cb_finish:(agent)=>{
+	OnFinish:(agent)=>{
 		agent.User.Count+=6;
-		Test.chk_strict(agent.User.Count,22);
+		Test.ChkStrict(agent.User.Count,22);
 	},
-	cb_abort:(agent)=>{
-		Test.chk_never("don't step");
+	OnAbort:(agent)=>{
+		Test.Never("don't step");
 	},
 }
 
 let workset2={
 	name:'Test Rescuer',
 
-	cb_open:(agent)=>{
+	OnOpen:(agent)=>{
 		agent.WaitFor(()=>{
 			return agent1.IsHalt();
 		});
 	},
-	cb_ready:(agent)=>{
+	OnReady:(agent)=>{
 		// rescue locked agent 
 		let hm=agent1.GetHappeningManager();
 		hm.Poll((hap)=>{
@@ -75,23 +75,23 @@ let workset2={
 
 const scenaria=[
 	{
-		title:'Rescue Locked Agent',
-		proc:async (tool)=>{
-			workset1.launcher=tool.Launcher;
-			workset2.launcher=tool.Launcher;
-			workset1.happen=tool.Launcher.HappenTo.CreateLocal({
-				happen:(hap)=>{
+		Title:'Rescue Locked Agent',
+		Proc:async (tool)=>{
+			workset1.Launcher=tool.Launcher;
+			workset2.Launcher=tool.Launcher;
+			workset1.HappenTo=tool.Launcher.HappenTo.CreateLocal({
+				OnHappen:(hap)=>{
 //					tool.Log.Fatal(hap.ToString(),hap.GetProp());
 				},
 			});
-			workset2.happen=tool.Launcher.HappenTo.CreateLocal({
-				happen:(hap)=>{
+			workset2.HappenTo=tool.Launcher.HappenTo.CreateLocal({
+				OnHappen:(hap)=>{
 					tool.Log.Fatal(hap.ToString(),hap.GetProp());
 				},
 			});
 
 			agent1=AgentManager.StandBy(workset1);
-			Test.chk_strict(agent1.User.Count,1);
+			Test.ChkStrict(agent1.User.Count,1);
 
 			handle1=agent1.Fetch();
 			handle1.Open();

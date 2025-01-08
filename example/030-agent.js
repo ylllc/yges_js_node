@@ -17,36 +17,36 @@ Engine.Start();
 // for Worker environment 
 let launcher=Engine.CreateLauncher();
 let hap_local=HappeningManager.CreateLocal({
-	happen:(hap)=>{Log.Fatal(hap.GetProp());},
+	OnHappen:(hap)=>{Log.Fatal(hap.GetProp());},
 });
 
 // Worker1 
 let workset1={
-	launcher:launcher,
-	happen:hap_local,
-	user:{Count:0},
-	cb_open:(worker)=>{
+	Launcher:launcher,
+	HappenTo:hap_local,
+	User:{Count:0},
+	OnOpen:(worker)=>{
 		Log.Info('Worker1 open');
 		worker.WaitFor(()=>{
 			return ++worker.User.Count>=10;
 		});
 	},
-	cb_back:(worker)=>{
+	OnBack:(worker)=>{
 		Log.Info('Worker1 back');
 		worker.WaitFor(()=>{
 			return --worker.User.Count<=0;
 		});
 	},
-	cb_ready:(worker)=>{
+	OnReady:(worker)=>{
 		Log.Info('Worker1 ready');
 	},
-	cb_close:(worker)=>{
+	OnClose:(worker)=>{
 		Log.Info('Worker1 close');
 		worker.WaitFor(()=>{
 			return --worker.User.Count<=0;
 		});
 	},
-	cb_finish:(worker)=>{
+	OnFinish:(worker)=>{
 		Log.Info('Worker1 finish');
 	},
 }
@@ -54,21 +54,21 @@ let workset1={
 // Worker2 
 // has dependency, Worker1 required 
 let workset2={
-	launcher:launcher,
-	happen:hap_local,
-	user:{Count:0},
-	dependencies:{w1:AgentManager.Launch(workset1)},
-	cb_open:(worker)=>{
+	Launcher:launcher,
+	HappenTo:hap_local,
+	User:{Count:0},
+	Dependencies:{w1:AgentManager.Launch(workset1)},
+	OnOpen:(worker)=>{
 		Log.Info('Worker2 open');
 		worker.User.Count=0;
 	},
-	cb_ready:(worker)=>{
+	OnReady:(worker)=>{
 		Log.Info('Worker2 ready');
 	},
-	cb_close:(worker)=>{
+	OnClose:(worker)=>{
 		Log.Info('Worker2 close');
 	},
-	cb_finish:(worker)=>{
+	OnFinish:(worker)=>{
 		Log.Info('Worker2 finish');
 	},
 };
@@ -77,16 +77,16 @@ let workset2={
 	// Worker1 runs 
 	let wh1=AgentManager.Run(workset1);
 	Timing.Delay(300,()=>{wh1.Close();});
-	await Timing.SyncKit(20,()=>{return !wh1.IsBusy();}).promise();
+	await Timing.SyncKit(20,()=>{return !wh1.IsBusy();}).ToPromise();
 
 	// Worker1 reopen&restart 
-	await Timing.DelayKit(100,()=>{wh1.Open();}).promise();
+	await Timing.DelayKit(100,()=>{wh1.Open();}).ToPromise();
 	await Timing.DelayKit(150,()=>{
 		Log.Info('Worker1 restart');
 		wh1.Restart();
-	}).promise();
-	await Timing.DelayKit(500,()=>{wh1.Close();}).promise();
-	await Timing.SyncKit(20,()=>{return !wh1.IsBusy();}).promise();
+	}).ToPromise();
+	await Timing.DelayKit(500,()=>{wh1.Close();}).ToPromise();
+	await Timing.SyncKit(20,()=>{return !wh1.IsBusy();}).ToPromise();
 
 	// Worker2 open 
 	// and depndencies too 

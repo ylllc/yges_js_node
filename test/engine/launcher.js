@@ -17,54 +17,54 @@ let count_abort=0;
 
 const scenaria=[
 	{
-		title:'Launcher',
-		proc:async (tool)=>{
+		Title:'Launcher',
+		Proc:async (tool)=>{
 			let lnc=tool.Launcher.CreateLauncher({
-				name:'test launcher',
-				happen:tool.Launcher.HappenTo,
+				Name:'test launcher',
+				HappenTo:tool.Launcher.HappenTo,
 			});
 			lnc.Limit=0;
-			Test.chk_strict(0,lnc.CountActive(),'empty launcher');
-			Test.chk_strict(0,lnc.CountHeld(),'empty launcher');
+			Test.ChkStrict(0,lnc.CountActive(),'empty launcher');
+			Test.ChkStrict(0,lnc.CountHeld(),'empty launcher');
 
 			for(let i=0;i<PROCS;++i){
 				lnc.Launch({
-					cb_start:(user)=>{
+					OnStart:(user)=>{
 						user.until=new Date(Date.now()+WAIT);
 						++count_start;
 					},
-					cb_poll:(user)=>{
+					OnPoll:(user)=>{
 						return new Date()<user.until;
 					},
-					cb_done:(user)=>{
+					OnDone:(user)=>{
 						++count_done;
 					},
-					cb_abort:(user)=>{
+					OnAbort:(user)=>{
 						++count_abort;
 					}
 				});
 			}
-			Test.chk_strict(0,count_start,'bgn - start');
-			Test.chk_strict(0,count_done,'bgn - done');
-			Test.chk_strict(0,count_abort,'bgn - abort');
+			Test.ChkStrict(0,count_start,'bgn - start');
+			Test.ChkStrict(0,count_done,'bgn - done');
+			Test.ChkStrict(0,count_abort,'bgn - abort');
 
-			Test.chk_strict(0,lnc.CountActive(),'held launcher');
-			Test.chk_strict(PROCS,lnc.CountHeld(),'held launcher');
+			Test.ChkStrict(0,lnc.CountActive(),'held launcher');
+			Test.ChkStrict(PROCS,lnc.CountHeld(),'held launcher');
 			lnc.Limit=LIMIT;
 
 			tool.Launcher.Delay(WAIT/2,(user)=>{
-				Test.chk_strict(LIMIT,lnc.CountActive(),'start launcher: '+lnc.CountActive());
-				Test.chk_strict(PROCS-LIMIT,lnc.CountHeld(),'start launcher: '+lnc.CountHeld());
+				Test.ChkStrict(LIMIT,lnc.CountActive(),'start launcher: '+lnc.CountActive());
+				Test.ChkStrict(PROCS-LIMIT,lnc.CountHeld(),'start launcher: '+lnc.CountHeld());
 			});
 
 			await lnc.ToPromise(false);
 
-			Test.chk_strict(0,lnc.CountActive(),'done launcher');
-			Test.chk_strict(0,lnc.CountHeld(),'done launcher');
+			Test.ChkStrict(0,lnc.CountActive(),'done launcher');
+			Test.ChkStrict(0,lnc.CountHeld(),'done launcher');
 
-			Test.chk_strict(PROCS,count_start,'end - start');
-			Test.chk_strict(PROCS,count_done,'end - done');
-			Test.chk_strict(0,count_abort,'end - abort');
+			Test.ChkStrict(PROCS,count_start,'end - start');
+			Test.ChkStrict(PROCS,count_done,'end - done');
+			Test.ChkStrict(0,count_abort,'end - abort');
 			lnc.Abandon();
 
 			await tool.Launcher.ToPromise();

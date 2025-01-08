@@ -12,28 +12,28 @@ let agent=null;
 let handle=null;
 
 let workset={
-	user:{Count:1},
-	cb_open:(agent)=>{
+	User:{Count:1},
+	OnOpen:(agent)=>{
 		agent.User.Count+=1;
-		Test.chk_strict(agent.User.Count,2);
+		Test.ChkStrict(agent.User.Count,2);
 	},
-	cb_ready:(agent)=>{
+	OnReady:(agent)=>{
 		agent.User.Count+=2;
-		Test.chk_strict(agent.User.Count,4);
+		Test.ChkStrict(agent.User.Count,4);
 
 		// happening after ready 
 		// required resolving it to recover 
 		agent.GetHappeningManager().HappenMsg('Test Hap.');
 	},
-	poll_healthy:(agent)=>{
+	OnPollInHealthy:(agent)=>{
 		agent.User.Count+=4;
-		Test.chk_strict(agent.User.Count,11);
+		Test.ChkStrict(agent.User.Count,11);
 
 		handle.Close();
 	},
-	poll_trouble:(agent)=>{
+	OnPollInTrouble:(agent)=>{
 		agent.User.Count+=3;
-		Test.chk_strict(agent.User.Count,7);
+		Test.ChkStrict(agent.User.Count,7);
 
 		// resolve all happenings in target HappeningManager 
 		let hm=agent.GetHappeningManager();
@@ -41,32 +41,32 @@ let workset={
 			hap.Resolve();
 		});
 	},
-	cb_close:(agent)=>{
+	OnClose:(agent)=>{
 		agent.User.Count+=5;
-		Test.chk_strict(agent.User.Count,16);
+		Test.ChkStrict(agent.User.Count,16);
 	},
-	cb_finish:(agent)=>{
+	OnFinish:(agent)=>{
 		agent.User.Count+=6;
-		Test.chk_strict(agent.User.Count,22);
+		Test.ChkStrict(agent.User.Count,22);
 	},
-	cb_abort:(agent)=>{
-		Test.chk_never("don't step");
+	OnAbort:(agent)=>{
+		Test.Never("don't step");
 	},
 }
 
 const scenaria=[
 	{
-		title:'Agent Repairing',
-		proc:async (tool)=>{
-			workset.launcher=tool.Launcher;
-			workset.happen=tool.Launcher.HappenTo.CreateLocal({
-				happen:(hap)=>{
+		Title:'Agent Repairing',
+		Proc:async (tool)=>{
+			workset.Launcher=tool.Launcher;
+			workset.HappenTo=tool.Launcher.HappenTo.CreateLocal({
+				OnHappen:(hap)=>{
 //					tool.Log.Fatal(hap.ToString(),hap.GetProp());
 				},
 			});
 
 			agent=AgentManager.StandBy(workset);
-			Test.chk_strict(agent.User.Count,1);
+			Test.ChkStrict(agent.User.Count,1);
 
 			handle=agent.Fetch();
 			handle.Open();

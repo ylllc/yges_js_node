@@ -9,8 +9,8 @@ import Test from '../../api/unittest.js';
 
 const scenaria=[
 	{
-		title:'Log Capturer',
-		proc:(tool)=>{
+		Title:'Log Capturer',
+		Proc:(tool)=>{
 			const Log=tool.Log;
 
 			// capture a log for test 
@@ -19,7 +19,7 @@ const scenaria=[
 				src.Text=src.Capt+':'+src.Lev+':'+src.Msg;
 			}
 			Log.Way=(src)=>{
-				Test.chk_strict(src.Text,subj,'captured log');
+				Test.ChkStrict(src.Text,subj,'captured log');
 			}
 
 			// set showable log level 
