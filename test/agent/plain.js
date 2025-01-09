@@ -1,6 +1,6 @@
 // † Yggdrasil Essense for JavaScript † //
 // ====================================== //
-// © 2024 Yggdrasil Leaves, LLC.          //
+// © 2024-5 Yggdrasil Leaves, LLC.        //
 //        All rights reserved.            //
 
 import Test from '../../api/unittest.js';
@@ -10,16 +10,16 @@ import AgentManager from '../../api/agent.js';
 
 const scenaria=[
 	{
-		title:'Plain Agent',
-		proc:async (tool)=>{
-			let w=AgentManager.standby({});
-			Test.chk_strict(w.isOpen(),false);
-			let h=w.open();
-			Test.chk_strict(w.isOpen(),true);
-			h.close();
-			Test.chk_strict(w.isOpen(),false);
+		Title:'Plain Agent',
+		Proc:async (tool)=>{
+			let w=AgentManager.StandBy({});
+			Test.ChkStrict(w.IsOpen(),false);
+			let h=w.Open();
+			Test.ChkStrict(w.IsOpen(),true);
+			h.Close();
+			Test.ChkStrict(w.IsOpen(),false);
 		},
 	},
 ]
 
-Test.run(scenaria);
+Test.Run(scenaria);

@@ -1,20 +1,21 @@
 // † Yggdrasil Essense for JavaScript † //
 // ====================================== //
-// © 2024 Yggdrasil Leaves, LLC.          //
+// © 2024-5 Yggdrasil Leaves, LLC.        //
 //        All rights reserved.            //
 
-// Examples: Value Trivia --------------- //
-
+import YgEs from '../api/common.js';
 import Log from '../api/logger.js';
 import Util from '../api/util.js';
+
+// Examples: Value Trivia --------------- //
 
 function test(func,data){
 
 	for(let f in func){
-		Log.info('-=-=-=-=-=-=-=-=- '+f+' -=-=-=-=-=-=-=-=-');
+		Log.Info('-=-=-=-=-=-=-=-=- '+f+' -=-=-=-=-=-=-=-=-');
 		for(let d in data){
-			try{Log.info(d+' => '+func[f](data[d]));}
-			catch(e){Log.fatal(e.message);}
+			try{Log.Info(d+' => '+func[f](data[d]));}
+			catch(e){Log.Fatal(e.message);}
 		}
 	}
 }
@@ -23,7 +24,7 @@ test({
 	'==NaN':(val)=>(val==NaN)?'true':'false',
 	'===NaN':(val)=>(val===NaN)?'true':'false',
 	'isNaN':(val)=>isNaN(val)?'true':'false',
-	'isJustNaN':(val)=>Util.isJustNaN(val)?'true':'false',
+	'IsJustNaN':(val)=>Util.IsJustNaN(val)?'true':'false',
 },{
 	'NaN':NaN,
 	'undefined':undefined,
@@ -39,7 +40,7 @@ test({
 	'==Infinity':(val)=>(val==Infinity)?'true':'false',
 	'===Infinity':(val)=>(val===Infinity)?'true':'false',
 	'!isFinite':(val)=>!isFinite(val)?'true':'false',
-	'isJustInfinity':(val)=>Util.isJustInfinity(val)?'true':'false',
+	'IsJustInfinity':(val)=>Util.IsJustInfinity(val)?'true':'false',
 },{
 	'Infinity':Infinity,
 	'-Infinity':-Infinity,
@@ -56,7 +57,7 @@ test({
 	'===null':(val)=>(val===null)?'true':'false',
 	'==undefined':(val)=>(val==undefined)?'true':'false',
 	'===undefined':(val)=>(val===undefined)?'true':'false',
-	'isEmpty':(val)=>Util.isEmpty(val)?'true':'false',
+	'IsEmpty':(val)=>Util.IsEmpty(val)?'true':'false',
 },{
 	'""':"",
 	'0':0,
@@ -70,11 +71,11 @@ test({
 
 test({
 	'!!':(val)=>!!val?'true':'false',
-	'isValid':(val)=>Util.isValid(val)?'true':'false',
-	'booleanize':(val)=>Util.booleanize(val),
-	'stringable booleanize':(val)=>Util.booleanize(val,true),
-	'trinarize':(val)=>Util.trinarize(val),
-	'stringable trinarize':(val)=>Util.trinarize(val,true),
+	'IsValid':(val)=>Util.IsValid(val)?'true':'false',
+	'Booleanize':(val)=>Util.Booleanize(val),
+	'stringable Booleanize':(val)=>Util.Booleanize(val,true),
+	'Trinarize':(val)=>Util.Trinarize(val),
+	'stringable Trinarize':(val)=>Util.Trinarize(val,true),
 },{
 	'""':"",
 	'0':0,
@@ -95,8 +96,8 @@ test({
 
 test({
 	'padStart':(val)=>(''+val).padStart(8,'0'),
-	'zerofill':(val)=>Util.zerofill(val,8),
-	'zerofill+':(val)=>Util.zerofill(val,8,true),
+	'FillZero':(val)=>Util.FillZero(val,8),
+	'FillZero+':(val)=>Util.FillZero(val,8,true),
 },{
 	'0':0,
 	'123.4':123.4,
@@ -106,9 +107,9 @@ test({
 
 test({
 	'toString':(val)=>val.toString(),
-	'justString':(val)=>Util.justString(val),
+	'JustString':(val)=>YgEs.JustString(val),
 	'JSON':(val)=>JSON.stringify(val),
-	'inspect':(val)=>Util.inspect(val),
+	'Inspect':(val)=>YgEs.Inspect(val),
 },
 {
 	'false':false,

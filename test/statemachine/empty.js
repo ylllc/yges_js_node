@@ -1,6 +1,6 @@
 // † Yggdrasil Essense for JavaScript † //
 // ====================================== //
-// © 2024 Yggdrasil Leaves, LLC.          //
+// © 2024-5 Yggdrasil Leaves, LLC.        //
 //        All rights reserved.            //
 
 import Test from '../../api/unittest.js';
@@ -13,28 +13,28 @@ const states={
 }
 
 let opt={
-	cb_done:(user)=>{
+	OnDone:(user)=>{
 		// OK 
 	},
-	cb_abort:(user)=>{
-		Test.never('states abend');
+	OnAbort:(user)=>{
+		Test.Never('states abend');
 	},
 }
 
 const scenaria=[
 	{
-		title:'Empty Running',
-		proc:async (tool)=>{
-			opt.launcher=tool.Launcher;
-			opt.happen=tool.Launcher.HappenTo;
+		Title:'Empty Running',
+		Proc:async (tool)=>{
+			opt.Launcher=tool.Launcher;
+			opt.HappenTo=tool.Launcher.HappenTo;
 
 			// run with undefined state 
 			// abort soon 
-			StateMachine.run(null,states,opt);
+			StateMachine.Run(null,states,opt);
 
-			await tool.Launcher.toPromise();
+			await tool.Launcher.ToPromise();
 		},
 	},
 ]
 
-Test.run(scenaria);
+Test.Run(scenaria);

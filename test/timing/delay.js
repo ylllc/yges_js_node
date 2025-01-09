@@ -1,6 +1,6 @@
 // † Yggdrasil Essense for JavaScript † //
 // ====================================== //
-// © 2024 Yggdrasil Leaves, LLC.          //
+// © 2024-5 Yggdrasil Leaves, LLC.        //
 //        All rights reserved.            //
 
 import Test from '../../api/unittest.js';
@@ -12,24 +12,24 @@ const interval=100;
 
 const scenaria=[
 	{
-		title:'Delay',
-		proc:async ()=>{
+		Title:'Delay',
+		Proc:async ()=>{
 			let t1=Date.now();
 			await new Promise((ok,ng)=>{
-				Timing.delay(interval,()=>{
+				Timing.Delay(interval,()=>{
 					let dt=Date.now()-t1;
-					Test.chk_great(dt,interval-(interval>>3));
+					Test.ChkGreat(dt,interval-(interval>>3));
 					ok();
 				});
 			});
 		},
 	},
 	{
-		title:'Cancel Delay',
-		proc:async (tool)=>{
+		Title:'Cancel Delay',
+		Proc:async (tool)=>{
 			await new Promise((ok,ng)=>{
-				let cancel=Timing.delay(interval,()=>{
-					Test.never('not cancelled');
+				let cancel=Timing.Delay(interval,()=>{
+					Test.Never('not cancelled');
 				});
 				cancel();
 				ok();
@@ -38,4 +38,4 @@ const scenaria=[
 	},
 ]
 
-Test.run(scenaria);
+Test.Run(scenaria);

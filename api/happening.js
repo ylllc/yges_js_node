@@ -1,6 +1,6 @@
 // † Yggdrasil Essense for JavaScript † //
 // ====================================== //
-// © 2024 Yggdrasil Leaves, LLC.          //
+// © 2024-5 Yggdrasil Leaves, LLC.        //
 //        All rights reserved.            //
 
 import YgEs from './common.js';
@@ -9,135 +9,149 @@ import Log from './logger.js';
 // Happening Manager -------------------- //
 (()=>{ // local namespace 
 
-function _yges_happening_default_happened(hap){
-	Log.fatal(hap.getProp());	
+function _default_happened(hap){
+	Log.Fatal(hap.ToString(),hap.GetProp());	
 }
-function _yges_happening_default_abandoned(hap){
-	Log.warn('* Abandoned * '+hap.toString());	
+function _default_abandoned(hap){
+	Log.Warn('* Abandoned * '+hap.ToString(),hap.GetProp());	
 }
-function _yges_happening_default_resolved(hap){
-	Log.debug('* Resolved * '+hap.toString());	
+function _default_resolved(hap){
+	Log.Debug('* Resolved * '+hap.ToString(),hap.GetProp());	
 }
 
-function _yges_happening_create_happening(cbprop,cbstr,cberr,init={}){
+function _create_happening(cbprop,cbstr,cberr,init={}){
 
-	let cb_resolved=init.cb_resolved??_yges_happening_default_resolved;
-	let cb_abandoned=init.cb_abandoned??_yges_happening_default_abandoned;
+	let resolved=false;
+	let abandoned=false;
+	let onResolved=init.OnResolved??_default_resolved;
+	let onAbandoned=init.OnAbandoned??_default_abandoned;
 
 	let hap={
-		name:init.name??'YgEs_Happening',
-		resolved:false,
-		abandoned:false,
-		User:init.user??{},
+		Name:init.Name??'YgEs.Happening',
+		User:init.User??{},
 
-		getProp:cbprop,
+		GetProp:cbprop,
+		ToString:cbstr,
 		toString:cbstr,
-		toJSON:()=>JSON.stringify(hap.getProp()),
-		toError:cberr,
+		ToJSON:()=>JSON.stringify(hap.GetProp()),
+		ToError:cberr,
 
-		isResolved:()=>hap.resolved,
-		resolve:()=>{
-			if(hap.resolved)return;
-			hap.resolved=true;
-			hap.abandoned=false;
-			if(cb_resolved)cb_resolved(hap);
+		IsResolved:()=>resolved,
+		Resolve:()=>{
+			if(resolved)return;
+			resolved=true;
+			abandoned=false;
+			if(onResolved)onResolved(hap);
 		},
 
-		isAbandoned:()=>hap.abandoned && !hap.resolved,
-		abandon:()=>{
-			if(hap.resolved)return;
-			if(hap.abandoned)return;
-			hap.abandoned=true;
-			if(cb_abandoned)cb_abandoned(hap);
+		IsAbandoned:()=>abandoned && !resolved,
+		Abandon:()=>{
+			if(resolved)return;
+			if(abandoned)return;
+			abandoned=true;
+			if(onAbandoned)onAbandoned(hap);
 		},
 	}
 	return hap;
 }
 
-function _yges_happening_create_manager(prm,parent=null){
+function _create_manager(prm,parent=null){
+
+	let issues=[]
+	let children=[]
+
+	const onHappen=(hap)=>{
+		for(let hm=mng;hm;hm=hm.GetParent()){
+			if(!hm.OnHappen)continue;
+			hm.OnHappen(hap);
+			return;
+		}
+		_default_happened(hap);
+	}
 
 	let mng={
-		name:prm.name??'YgEs_HappeningManager',
-		issues:[],
-		children:[],
-		Happened:prm.happen??null,
-		User:prm.user??{},
+		name:prm.Name??'YgEs.HappeningManager',
+		OnHappen:prm.OnHappen??null,
+		User:prm.User??{},
 
-		createLocal:(prm={})=>_yges_happening_create_manager(prm,mng),
-
-		abandon:()=>{
-			for(let sub of mng.children){
-				sub.abandon();
-			}
-			for(let hap of mng.issues){
-				hap.abandon();
-			}
-			mng.issues=[]
+		CreateLocal:(prm={})=>{
+			let cm=_create_manager(prm,mng);
+			children.push(cm);
+			return cm;
 		},
 
-		countIssues:()=>{
-			let ct=mng.issues.length;
-			for(let sub of mng.children){
-				ct+=sub.countIssues();
+		GetParent:()=>parent,
+		GetChildren:()=>children,
+		GetIssues:()=>issues,
+
+		Abandon:()=>{
+			for(let sub of children){
+				sub.Abandon();
+			}
+			for(let hap of issues){
+				hap.Abandon();
+			}
+			issues=[]
+		},
+
+		CountIssues:()=>{
+			let ct=issues.length;
+			for(let sub of children){
+				ct+=sub.CountIssues();
 			}
 			return ct;
 		},
-		isCleaned:()=>{
-			if(mng.issues.length>0)return false;
-			for(let sub of mng.children){
-				if(!sub.isCleaned())return false;
+		IsCleaned:()=>{
+			if(issues.length>0)return false;
+			for(let sub of children){
+				if(!sub.IsCleaned())return false;
 			}
 			return true;
 		},
-		cleanup:()=>{
+		CleanUp:()=>{
 			let tmp=[]
-			for(let hap of mng.issues){
-				if(!hap.resolved)tmp.push(hap);
+			for(let hap of issues){
+				if(!hap.IsResolved())tmp.push(hap);
 			}
-			mng.issues=tmp;
+			issues=tmp;
 
-			for(let sub of mng.children){
-				sub.cleanup();
+			for(let sub of children){
+				sub.CleanUp();
 			}
 		},
 
-		getInfo:()=>{
-			let info={name:mng.name,issues:[],children:[]}
-			for(let hap of mng.issues){
-				if(hap.resolved)continue;
-				info.issues.push({name:hap.name,prop:hap.getProp()});
+		GetInfo:()=>{
+			let info={Name:mng.name,Issues:[],Children:[]}
+			for(let hap of issues){
+				if(hap.IsResolved())continue;
+				info.Issues.push({Name:hap.name,Prop:hap.GetProp()});
 			}
-			for(let sub of mng.children){
-				let si=sub.getInfo();
-				if(si.issues.length>0 || si.children.length>0)info.children.push(si);
+			for(let sub of children){
+				let si=sub.GetInfo();
+				if(si.Issues.length>0 || si.Children.length>0)info.Children.push(si);
 			}
 			return info;
 		},
 
-		poll:(cb)=>{
+		Poll:(cb)=>{
 			if(!cb)return;
-			for(let hap of mng.issues){
-				if(hap.resolved)continue;
-				if(hap.abandoned)continue;
+			for(let hap of issues){
+				if(hap.IsResolved())continue;
+				if(hap.IsAbandoned())continue;
 				cb(hap);
 			}
-			for(let sub of mng.children){
-				sub.poll(cb);
+			for(let sub of children){
+				sub.Poll(cb);
 			}
 		},
 
-		_callHappened:(hap)=>{
-			if(mng.Happened)mng.Happened(hap);
-			else if(parent)parent._callHappened(hap);
-			else _yges_happening_default_happened(hap);
-		},
-		happen:(hap)=>{
-			mng.issues.push(hap);
-			mng._callHappened(hap);
+		Happen:(hap)=>{
+			issues.push(hap);
+			onHappen(hap);
 			return hap;
 		},
-		happenMsg:(msg,init={})=>{
-			return mng.happen(_yges_happening_create_happening(
+		HappenMsg:(msg,init={})=>{
+			return mng.Happen(_create_happening(
 				()=>{return {msg:''+msg}},
 				()=>''+msg,
 				()=>new Error(msg),
@@ -145,8 +159,8 @@ function _yges_happening_create_manager(prm,parent=null){
 			));
 		},
 
-		happenProp:(prop,init={})=>{
-			return mng.happen(_yges_happening_create_happening(
+		HappenProp:(prop,init={})=>{
+			return mng.Happen(_create_happening(
 				()=>prop,
 				()=>JSON.stringify(prop),
 				()=>new Error(JSON.stringify(prop)),
@@ -154,20 +168,19 @@ function _yges_happening_create_manager(prm,parent=null){
 			));
 		},
 
-		happenError:(err,init={})=>{
-			return mng.happen(_yges_happening_create_happening(
-				()=>{return YgEs.fromError(err)},
+		HappenError:(err,init={})=>{
+			return mng.Happen(_create_happening(
+				()=>{return YgEs.FromError(err)},
 				()=>''+err,
 				()=>err,
 				init
 			));
 		},
 	}
-	if(parent)parent.children.push(mng);
 	return mng;
 }
 
-YgEs.HappeningManager=_yges_happening_create_manager('YgEs_GlobalHappeningManager');
+YgEs.HappeningManager=_create_manager({Name:'YgEs.GlobalHappeningManager'});
 
 })();
 export default YgEs.HappeningManager;

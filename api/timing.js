@@ -1,6 +1,6 @@
 // † Yggdrasil Essense for JavaScript † //
 // ====================================== //
-// © 2024 Yggdrasil Leaves, LLC.          //
+// © 2024-5 Yggdrasil Leaves, LLC.        //
 //        All rights reserved.            //
 
 import YgEs from './common.js';
@@ -12,7 +12,7 @@ let Timing=YgEs.Timing={
 	name:'YgEs_Timing',
 	User:{},
 
-	fromPromise:(promise,cb_ok=null,cb_ng=null)=>{
+	FromPromise:(promise,cb_ok=null,cb_ng=null)=>{
 		new Promise(async (ok,ng)=>{
 			try{
 				ok(await promise);
@@ -28,24 +28,23 @@ let Timing=YgEs.Timing={
 			else throw e;
 		});
 	},
-	toPromise:(cb_proc,cb_done=null,cb_fail=null)=>{
-		let p=new Promise((ok,ng)=>{
+	ToPromise:(cb_proc,cb_ok=null,cb_ng=null)=>{
+		return new Promise((ok,ng)=>{
 			cb_proc(ok,ng);
 		}).then((r)=>{
-			if(cb_done)cb_done(r);
+			if(cb_ok)cb_ok(r);
 			return r;
 		}).catch((e)=>{
-			if(cb_fail)cb_fail(e);
+			if(cb_ng)cb_ng(e);
 			else throw e;
 		});
-		return p;
 	},
 
-	delay:(ms,cb_done,cb_cancel=null)=>{
+	Delay:(ms,cb_done,cb_abort=null)=>{
 
 		let h=null;
 		if(!cb_done)return ()=>{
-			if(cb_cancel)cb_cancel();
+			if(cb_abort)cb_abort();
 		};
 
 		h=setTimeout(()=>{
@@ -58,11 +57,11 @@ let Timing=YgEs.Timing={
 			if(h==null)return;
 			clearTimeout(h);
 			h=null;
-			if(cb_cancel)cb_cancel();
+			if(cb_abort)cb_abort();
 		}
 	},
 
-	poll:(ms,cb_poll,cb_abort=null)=>{
+	Poll:(ms,cb_poll,cb_abort=null)=>{
 
 		if(!cb_poll)return ()=>{
 			if(cb_abort)cb_abort();
@@ -70,7 +69,7 @@ let Timing=YgEs.Timing={
 
 		let cancel=null;
 		let next=()=>{
-			cancel=Timing.delay(ms,()=>{
+			cancel=Timing.Delay(ms,()=>{
 				cb_poll();
 				if(!cancel)return;
 				cancel=null;
@@ -86,7 +85,7 @@ let Timing=YgEs.Timing={
 		}
 	},
 
-	sync:(ms,cb_chk,cb_done,cb_abort=null)=>{
+	Sync:(ms,cb_chk,cb_done,cb_abort=null)=>{
 
 		if(!cb_chk)return ()=>{};
 		if(!cb_done)return ()=>{};
@@ -97,7 +96,7 @@ let Timing=YgEs.Timing={
 			return ()=>{};
 		}
 
-		cancel=Timing.poll(ms,()=>{
+		cancel=Timing.Poll(ms,()=>{
 			if(!cb_chk())return;
 			if(cancel){
 				cancel();
@@ -114,10 +113,10 @@ let Timing=YgEs.Timing={
 		}
 	},
 
-	delayKit:(ms,cb_done=null,cb_cancel=null)=>{
+	DelayKit:(ms,cb_done=null,cb_cancel=null)=>{
 		let kit={}
-		kit.promise=()=>Timing.toPromise((ok,ng)=>{
-			kit.cancel=Timing.delay(ms,
+		kit.ToPromise=()=>Timing.ToPromise((ok,ng)=>{
+			kit.Cancel=Timing.Delay(ms,
 			()=>{
 				if(cb_done)cb_done();
 				ok();
@@ -128,10 +127,10 @@ let Timing=YgEs.Timing={
 		});
 		return kit;
 	},
-	syncKit:(ms,cb_chk,cb_done=null,cb_abort=null)=>{
+	SyncKit:(ms,cb_chk,cb_done=null,cb_abort=null)=>{
 		let kit={}
-		kit.promise=()=>Timing.toPromise((ok,ng)=>{
-			kit.cancel=Timing.sync(ms,cb_chk,
+		kit.ToPromise=()=>Timing.ToPromise((ok,ng)=>{
+			kit.Cancel=Timing.Sync(ms,cb_chk,
 			()=>{
 				if(cb_done)ok(cb_done());
 				else ok();
