@@ -17,7 +17,7 @@ function _initStat(path,stat){
 		name:'YgEs_FileStat',
 
 		GetPath:()=>path,
-		getLowLevel:()=>stat,
+		GetLowLevel:()=>stat,
 		IsFile:()=>{
 			if(!stat)return null;
 			return stat.isFile();
