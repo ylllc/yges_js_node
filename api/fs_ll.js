@@ -14,7 +14,7 @@ import {glob} from 'node:fs';
 function _initStat(path,stat){
 
 	var t={
-		name:'YgEs_FileStat',
+		Name:'YgEs.FileStat',
 
 		GetPath:()=>path,
 		GetLowLevel:()=>stat,
@@ -75,7 +75,7 @@ function _initStat(path,stat){
 }
 
 const FS=YgEs.FS={
-	name:'YgEs_FileLowLevel',
+	Name:'YgEs.FileLowLevel',
 	User:{},
 	_private_:{},
 
