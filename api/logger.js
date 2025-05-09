@@ -34,27 +34,27 @@ function _default_way(src){
 		case Log.LEVEL.TICK:
 		case Log.LEVEL.TRACE:
 		case Log.LEVEL.DEBUG:
-		console.debug(src.Msg);
+		console.debug(src.Text);
 		break;
 
 		case Log.LEVEL.INFO:
 		case Log.LEVEL.NOTICE:
-		console.info(src.Msg);
+		console.info(src.Text);
 		break;
 
 		case Log.LEVEL.WARN:
-		console.warn(src.Msg);
+		console.warn(src.Text);
 		break;
 
 		case Log.LEVEL.FATAL:
 		case Log.LEVEL.CRIT:
 		case Log.LEVEL.ALERT:
 		case Log.LEVEL.EMERG:
-		console.error(src.Msg);
+		console.error(src.Text);
 		break;
 
 		default:
-		console.log(src.Msg);
+		console.log(src.Text);
 	}
 
 	if(src.Prop)console.dir(src.Prop);
@@ -64,7 +64,7 @@ function _do_format(t,src){
 
 	for(let inst=t;inst;inst=inst.GetParent()){
 		if(inst.Format!==null){
-			inst.Format(src);
+			inst.Format(inst,src);
 			return;
 		}
 	}
@@ -75,7 +75,7 @@ function _do_write(t,src){
 
 	for(let inst=t;inst;inst=inst.GetParent()){
 		if(inst.Way!==null){
-			inst.Way(src);
+			inst.Way(inst,src);
 			return;
 		}
 	}
@@ -149,13 +149,13 @@ function _create_splitter(capt=null,showable=null,parent=null){
 
 	let t=_create_local(capt,showable,parent);
 	t._private_.slot={}
-	t.Format=(src)=>{
+	t.Format=(logger,src)=>{
 		for(let sub of Object.values(t._private_.slot)){
 			if(src.Lev<sub.GetShowable())continue;
 			_do_format(sub,src);
 		}
 	}
-	t.Way=(src)=>{
+	t.Way=(logger,src)=>{
 		for(let sub of Object.values(t._private_.slot)){
 			if(src.Lev<sub.GetShowable())continue;
 			_do_write(sub,src);
