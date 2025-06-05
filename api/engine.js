@@ -22,6 +22,10 @@ const CLASS_ROOT='YgEs.RootLauncher';
 
 function _create_proc(prm,launcher){
 
+	const trace_proc=prm.TraceProc??null;
+	let log=prm.Log??Log;
+	let name=prm.Name??CLASS_PROC;
+
 	const onStart=prm.OnStart??((proc)=>{});
 	const onPoll=prm.OnPoll??((proc)=>{});
 	const onDone=prm.OnDone??((proc)=>{});
@@ -40,7 +44,7 @@ function _create_proc(prm,launcher){
 
 	const iid=YgEs.NextID();
 	let proc={
-		Name:prm.Name??CLASS_PROC,
+		Name:name,
 		User:prm.User??{},
 		_private_:{},
 
@@ -68,10 +72,17 @@ function _create_proc(prm,launcher){
 		}},
 
 		_start:()=>{
-			if(started)return;
-			if(proc.IsEnd())return;
+			if(started){
+				if(trace_proc)log.Trace(name+' already started');
+				return;
+			}
+			if(proc.IsEnd()){
+				if(trace_proc)log.Trace(name+' already ended');
+				return;
+			}
 			started=true;
 			try{
+				if(trace_proc)log.Trace(name+' starting now');
 				onStart(proc);
 			}
 			catch(e){
@@ -85,6 +96,9 @@ function _create_proc(prm,launcher){
 		},
 		Abort:()=>{
 			if(proc.IsEnd())return;
+
+			if(trace_proc)log.Trace(name+' aborted');
+
 			aborted=true;
 			try{
 				onAbort(proc);
@@ -112,6 +126,8 @@ function _create_proc(prm,launcher){
 				return false;
 			}
 			try{
+				if(trace_proc)log.Trace(name+' done');
+
 				onDone(proc);
 				finished=true;
 			}

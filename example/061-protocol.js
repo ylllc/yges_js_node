@@ -9,7 +9,7 @@ import Engine from '../api/engine.js';
 import HappeningManager from '../api/happening.js';
 import Log from '../api/logger.js';
 
-// Example: Network Simulation ---------- //
+// Example: Protocol Simulation --------- //
 
 // start the Engine 
 Engine.Start();
@@ -23,7 +23,8 @@ let hap_local=HappeningManager.CreateLocal({
 
 // payload definition 
 const pld_specs={
-	Hello:{},
+	HELLO:{},
+	HI:{},
 }
 
 // receiver setting
@@ -51,7 +52,8 @@ const recvopt={
 }
 
 // receiver 
-let recv=Network.CreateReceiver(recvopt);
+let recv_host=Network.CreateReceiver(recvopt);
+let recv_guest=Network.CreateReceiver(recvopt);
 
 // sender setting
 const sendopt={
@@ -72,10 +74,9 @@ const sendopt={
 //	DubIntervalMax:500,
 }
 
-// loopback sender 
-let loopback=Network.CreateLoopback(recv,'Loopback',sendopt);
-// terminate sender 
-let term=Network.CreateTerminator(sendopt);
+// sender 
+let send_host=Network.CreateLoopback(recv_guest,sendopt);
+let send_guest=Network.CreateLoopback(recv_host,sendopt);
 
 // transport setting
 const tpopt={
@@ -87,70 +88,78 @@ const tpopt={
 	TraceProc:false,
 	PayloadSpecs:pld_specs,
 	PayloadHooks:{
-		Hello:{
+		HELLO:{
 			OnRequest:(tp,payload)=>{
 
-				// target EndPoint 
-				let epn=payload.Body.To;
-				let ep=tp.GetEndPoint(epn);
-				if(!ep){
-					log_local.Fatal('Transport ('+tp.Name+') does not have an EndPoint named '+epn.To,payload);
-				}
+				// create a Protocol for continue communicating 
+				let prot=tp.NewProtocol('host');
+				if(!prot)return;
 
-				ep.User.OnRecvMsg(ep,payload);
+				log_local.Info('Protocol ('+prot.GetPID()+') created by requested',payload);
+
+				// replying 
+				// (host does not know guest's EndPoint name) 
+				prot.Send(null,'HI','Hi, '+payload.From);
+			},
+		},
+		HI:{
+			OnHanding:(tp,payload)=>{
+
+				// calling by,
+				// - first replied from requested 
+				// - restart communicating in an abandoned Protocol 
+
+				log_local.Info('Protocol accepted',payload);
+
+				// specify handing EndPoint 
+				return 'guest';
+			},
+			OnReplied:(tp,prot,payload)=>{
+
+				log_local.Info('Replied on Protocol '+prot.GetPID(),payload);
+
+				// continue this Protocol 
+				return true;
 			},
 		},
 	},
 }
 
-let tp=Network.CreateTransport(tpopt);
-tp.AttachReceiver('lb',recv);
-tp.AttachSender('lb',loopback);
-tp.AttachSender('tm',term);
-tp.AttachSelector((tp,target)=>{
-	return (target=='')?'tm':target;
-});
+let tp_host=Network.CreateTransport(Object.assign(tpopt,{Dependencies:[recv_host,send_host]}));
+tp_host.AttachReceiver('port_host',recv_host);
+tp_host.AttachSender('port_host',send_host);
+tp_host.AttachSelector((tp,to)=>'port_host');
+let tp_guest=Network.CreateTransport(Object.assign(tpopt,{Dependencies:[recv_guest,send_guest]}));
+tp_guest.AttachReceiver('port_guest',recv_guest);
+tp_guest.AttachSender('port_guest',send_guest);
+tp_guest.AttachSelector((tp,to)=>'port_guest');
 
 // endpoint setting
 const epopt={
 	Log:log_local,
 	Launcher:launcher,
 	HappenTo:hap_local,
-	User:{
-		OnRecvMsg:(ep,payload)=>{
-			log_local.Info('EndPoint ('+ep.GetTransportName()+') received',payload);
-		},
-	},
 }
 
-let ep1=Network.CreateEndPoint(epopt).Open();
-let ep2=Network.CreateEndPoint(epopt).Open();
+let ep_host=Network.CreateEndPoint(epopt).Open();
+let ep_guest=Network.CreateEndPoint(epopt).Open();
 
-tp.Connect('EP1',ep1);
-tp.Connect('EP2',ep2);
+tp_host.Connect('host',ep_host);
+tp_guest.Connect('guest',ep_guest);
 
 (async ()=>{
 
 	// wait for endpoints ready 
-	await Timing.SyncKit(1000,()=>ep1.IsReady()).ToPromise();
-	await Timing.SyncKit(1000,()=>ep2.IsReady()).ToPromise();
+	await Timing.SyncKit(1000,()=>ep_host.IsReady()).ToPromise();
+	await Timing.SyncKit(1000,()=>ep_guest.IsReady()).ToPromise();
 
-	// send to Transport (but not reach to opposite EndPoint) 
-	// EndPoint does not have an instance address to reply 
-	// and can only send in one way 
-	ep1.Launch('lb','Hello',{To:'EP2',Msg:'Communicate Test1'});
-	ep1.Send('lb','Hello',{To:'EP1',Msg:'Loopback Test1'});
-	ep2.Launch('lb','Hello',{To:'EP1',Msg:'Communicate Test2'});
-	ep2.Launch('','Hello',{To:'EP1',Msg:'Terminate Test'});
-	ep2.KickAll();
-
-	ep1.Send('lb','Hello',{To:'EP2',Msg:'Communicate Test3A'});
-	ep2.Send('lb','Hello',{To:'EP1',Msg:'Communicate Test3B'});
+	// start a communicating 
+	ep_guest.Send(null,'HELLO','hello, Host');
 
 	await Timing.DelayKit(1500).ToPromise();
 
-	ep1.Close();
-	ep2.Close();
+	ep_guest.Close();
+	ep_host.Close();
 
 	launcher.Sync((dmy)=>{
 		Engine.ShutDown();

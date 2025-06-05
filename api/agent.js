@@ -23,6 +23,11 @@ const _state_lookup=Object.freeze(ll);
 
 function _standby(prm){
 
+	const trace_proc=prm.TraceProc??null;
+	const trace_stmac=prm.TraceStMac??null;
+	const trace_agent=prm.TraceAgent??null;
+	const depends=prm.Dependencies;
+
 	let opencount=0;
 	let ctrl=null;
 	let ready=false;
@@ -30,6 +35,7 @@ function _standby(prm){
 	let restart=false;
 	let aborted=false;
 	let wait=[]
+	let depended=[]
 
 	let name=prm.Name??'YgEs.Agent';
 	let log=prm.Log??Log;
@@ -80,6 +86,8 @@ function _standby(prm){
 		'REPAIR':{
 			OnStart:(ctrl,proc)=>{
 
+				if(trace_agent)log.Trace(()=>name+' start repairing');
+
 				try{
 					//start repairing 
 					wait=[]
@@ -96,7 +104,14 @@ function _standby(prm){
 			OnPollInKeep:(ctrl,proc)=>{
 				if(opencount<1){
 					happen.CleanUp();
-					return happen.IsCleaned()?'IDLE':'BROKEN';
+					if(happen.IsCleaned()){
+						if(trace_agent)log.Trace(()=>name+' cleaned up completely');
+						return 'IDLE';
+					}
+					else{
+						if(trace_agent)log.Trace(()=>name+' cannot clean');
+						return 'BROKEN';
+					}
 				}
 
 				// wait for delendencies 
@@ -128,15 +143,15 @@ function _standby(prm){
 				try{
 					wait=[]
 
-					// down dependencles too 
-					if(prm.Dependencies){
-						Util.SafeDictIter(prm.Dependencies,(k,h)=>{
-							h.Close();
-						});
-					}
+					if(ctrl.GetPrevState()=='UP')back=true;
 
-					if(ctrl.GetPrevState()=='UP'){
-						back=true;
+					if(trace_agent)log.Trace(()=>name+(back?'cancel opening':' start closing'));
+
+					// down dependencles too 
+					for(let h of depended)h.Close();
+					depended=[]
+
+					if(back){
 						if(prm.OnBack)prm.OnBack(agent);
 					}
 					else{
@@ -153,7 +168,7 @@ function _standby(prm){
 			},
 			OnPollInKeep:(ctrl,proc)=>{
 
-				// wait for delendencies 
+				// wait for dependencies 
 				let cont=[]
 				for(let d of wait){
 					try{
@@ -176,19 +191,23 @@ function _standby(prm){
 		},
 		'UP':{
 			OnStart:(ctrl,proc)=>{
+
+				if(trace_agent)log.Trace(()=>name+' start opening');
+
 				try{
+					depended=[]
 					wait=[]
 					if(prm.OnOpen)prm.OnOpen(agent);
 
 					// up dependencles too 
-					if(prm.Dependencies){
-						Util.SafeDictIter(prm.Dependencies,(k,h)=>{
-							h.Open();
+					if(depends){
+						for(let d of depends){
+							depended.push(d.Open());
 							wait.push({
-								Label:'Depends '+h.GetAgent().Name,
-								Chk:()=>h.IsReady(),
+								Label:'Depends '+d.Name,
+								Chk:()=>d.IsReady(),
 							});
-						});
+						}
 					}
 				}
 				catch(e){
@@ -223,6 +242,9 @@ function _standby(prm){
 			},
 			OnEnd:(ctrl,proc)=>{
 				if(ctrl.GetNextState()=='HEALTHY'){
+
+					if(trace_agent)log.Trace(()=>name+' is ready');
+
 					try{
 						// mark ready before callback 
 						ready=true;
@@ -261,6 +283,9 @@ function _standby(prm){
 		},
 		'TROUBLE':{
 			OnStart:(ctrl,proc)=>{
+
+				if(trace_agent)log.Trace(()=>name+' is troubled');
+
 				try{
 					if(prm.OnTrouble)prm.OnTrouble(agent);
 				}
@@ -296,6 +321,9 @@ function _standby(prm){
 			},
 			OnEnd:(ctrl,proc)=>{
 				if(ctrl.GetNextState()=='HEALTHY'){
+
+					if(trace_agent)log.Trace(()=>name+' is recovered');
+
 					try{
 						if(prm.OnRecover)prm.OnRecover(agent);
 					}
@@ -312,6 +340,8 @@ function _standby(prm){
 		'HALT':{
 			OnStart:(ctrl,proc)=>{
 				halt=true;
+
+				if(trace_agent)log.Trace(()=>name+' is halt');
 
 				try{
 					if(prm.OnHalt)prm.OnHalt(agent);
@@ -336,6 +366,9 @@ function _standby(prm){
 				halt=false;
 
 				if(ctrl.GetNextState()=='HEALTHY'){
+
+					if(trace_agent)log.Trace(()=>name+' is recovered');
+
 					try{
 						if(prm.OnRecover)prm.OnRecover(agent);
 					}
@@ -354,7 +387,9 @@ function _standby(prm){
 	let agent={
 		Name:name+'.Worker',
 		User:user,
-		_private_:{},
+		_private_:{
+			depended:[], //  
+		},
 
 		IsOpen:()=>opencount>0,
 		IsBusy:()=>!!ctrl || opencount>0,
@@ -363,10 +398,10 @@ function _standby(prm){
 		GetState:()=>ctrl?ctrl.GetCurState():'NONE',
 		GetInfo:()=>GetInfo(''),
 
+		GetAgent:()=>agent,
 		GetLogger:()=>log,
 		GetLauncher:()=>{return launcher;},
 		GetHappeningManager:()=>{return happen;},
-		GetDependencies:()=>{return prm.Dependencies;},
 
 		WaitFor:(label,cb_chk,prop={})=>{
 			wait.push({Label:label,Chk:cb_chk,Prop:prop});
@@ -389,12 +424,16 @@ function _standby(prm){
 		HappenTo:happen,
 		Launcher:launcher,
 		User:user,
+		TraceProc:trace_proc,
+		TraceStMac:trace_stmac,
 		OnDone:(proc)=>{
+			if(trace_agent)log.Trace(()=>name+' finished');
 			ctrl=null;
 			aborted=false;
 			if(prm.OnFinish)prm.OnFinish(agent,happen.IsCleaned());
 		},
 		OnAbort:(proc)=>{
+			if(trace_agent)log.Trace(()=>name+' aborted');
 			ctrl=null;
 			aborted=true;
 			if(prm.OnAbort)prm.OnAbort(agent);
@@ -411,7 +450,6 @@ function _standby(prm){
 			GetLogger:()=>agent.GetLogger(),
 			GetLauncher:()=>agent.GetLauncher(),
 			GetHappeningManager:()=>agent.GetHappeningManager(),
-			GetDependencies:()=>agent.GetDependencies(),
 
 			IsOpenHandle:()=>in_open,
 			IsOpenAgent:()=>agent.IsOpen(),
@@ -425,6 +463,7 @@ function _standby(prm){
 			Open:()=>{
 				if(!in_open){
 					in_open=true;
+					if(trace_agent)log.Trace(()=>name+' open; '+opencount+' => '+(opencount+1));
 					++opencount;
 				}
 				if(!ctrl){
@@ -436,6 +475,7 @@ function _standby(prm){
 			Close:()=>{
 				if(!in_open)return;
 				in_open=false;
+				if(trace_agent)log.Trace(()=>name+' close; '+opencount+' => '+(opencount-1));
 				--opencount;
 			},
 		}

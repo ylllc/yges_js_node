@@ -34,17 +34,128 @@ YgEs.CreateEnum=(src)=>{
 	return ll;
 }
 
-YgEs.SetDefault=(dst,def)=>{
+YgEs.SetDefault=(dst,def,log=null)=>{
 
-	if(Array.isArray(def))return dst;
-	if(typeof def!=='object')return dst;
+	if(Array.isArray(def) || typeof def!=='object'){
+		if(log)log.Fatal('def broken in YgEs.SetDefault()');
+		return dst;
+	}
 	if(dst==null)dst={}
 
 	for(let k in def){
 		dst[k]=(dst[k]===undefined)?def[k]:
-			YgEs.SetDefault(dst[k],def[k]);
+			YgEs.SetDefault(dst[k],def[k],log);
 	}
 	return dst;
+}
+
+function _customize_mono(src,def,log){
+
+	if(src!=null && typeof src==='object'){
+		// mono only 
+		if(log)log.Warn('src is invalid in YgEs.Customize()',src);
+		return def.Init;
+	}
+	if(def.Valid && !def.Valid(ss)){
+		// invalid 
+		if(log)log.Warn('src is invalid in YgEs.Customize()',src);
+		return def.Init;
+	}
+
+	// valid 
+	return src;
+}
+
+function _customize_class(src,def,log){
+
+	if(def.Valid && !def.Valid(src)){
+		// invalid 
+		if(log)log.Warn('src is invalid in YgEs.Customize()',src);
+		return def.Init;
+	}
+
+	return src;
+}
+
+function _customize_struct(src,def,log){
+
+	if(src==null)src={}
+	else if(typeof src!=='object'){
+		if(log)log.Warn('src is doubtful definition in YgEs.Customize()',src);
+		src={}
+	}
+
+	let dst={}
+	for(let k in def){
+		dst[k]=_customize_any(src[k],def[k],log);
+	}
+	for(let k in src){
+		if(def[k])continue;
+		dst[k]=src[k];
+	}
+	return dst;
+}
+
+function _customize_dict(src,def,log){
+
+	const subdef=Object.assign(def,{List:undefined,Dict:undefined});
+	let dst={}
+	for(let k in src){
+		// customize each entries 
+		let r=_customize_any(src[k],subdef,log);
+		if(r)dst[k]=r;
+	}
+	return dst;
+}
+
+function _customize_list(src,def,log){
+
+	const subdef=Object.assign(def,{List:undefined,Dict:undefined});
+	let dst=[]
+	for(let ss of src){
+		// customize each entries 
+		let r=_customize_any(ss,subdef,log);
+		if(r)dst.push(r);
+	}
+	return dst;
+}
+
+function _customize_any(src,def,log){
+
+	if(def==null || typeof def!=='object'){
+		// simple definition is a mono default value 
+		return src??def;
+	}
+	if(src===undefined){
+		// default valie 
+		return def.Init;
+	}
+	if(def.List && Array.isArray(src)){
+		// definition is an array 
+		return _customize_list(src,def,log);
+	}
+	if(def.Dict && (src==null || typeof src==='object')){
+		// definition is a dictionary 
+		return _customize_dict(src,def,log);
+	}
+	if(def.Class && (src == null || typeof src==='object')){
+		// definition is an instance 
+		return _customize_class(src,def,log);
+	}
+	if(def.Mono){
+		// definition is a mono value 
+		return _customize_mono(src,def,log);
+	}
+}
+
+YgEs.Customize=(src,def,log=null)=>{
+
+	if(Array.isArray(def)){
+		// array is not ruled
+		if(log)log.Warn('def is doubtful definition in YgEs.Customize()',def);
+		return {}
+	}
+	return _customize_struct(src,def,log);
 }
 
 YgEs.FromError=(err)=>{

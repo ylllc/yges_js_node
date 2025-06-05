@@ -13,6 +13,9 @@ import Log from './logger.js';
 
 function _run(start,states={},opt={}){
 
+	const trace_proc=opt.TraceProc??null;
+	const trace_stmac=opt.TraceStMac??null;
+
 	let launcher=opt.Launcher??Engine;
 	let cur=null;
 
@@ -59,10 +62,14 @@ function _run(start,states={},opt={}){
 			state_prev=state_cur;
 			state_cur=null;
 			poll_cur=poll_nop;
+
+			if(trace_stmac)log.Trace(()=>name+' is end');
 			return;
 		}
 		cur=states[state_next]??null;
 		if(!cur){
+			if(trace_stmac)log.Trace(()=>name+':'+state_next+' is missed');
+
 			happen.Happen(
 				'Missing State: '+state_next,{
 				Class:'YgEs.StateMachine',
@@ -76,10 +83,14 @@ function _run(start,states={},opt={}){
 		state_cur=state_next;
 		state_next=null;
 		try{
+			if(trace_stmac)log.Trace(()=>name+':'+state_cur+' is start');
+
 			if(cur.OnStart)cur.OnStart(ctrl,proc);
 			poll_cur=poll_up;
 		}
 		catch(e){
+			if(trace_stmac)log.Trace(()=>name+':'+state_cur+' thrown on start',e);
+
 			happen.Happen(e,{
 				Class:'YgEs.StateMachine',
 				Cause:'ThrownFromCallback',
@@ -96,6 +107,8 @@ function _run(start,states={},opt={}){
 			var r=cur.OnPollInUp?cur.OnPollInUp(ctrl,proc):true;
 		}
 		catch(e){
+			if(trace_stmac)log.Trace(()=>name+':'+state_cur+' thrown on poll',e);
+
 			happen.Happen(e,{
 				Class:'YgEs.StateMachine',
 				Cause:'ThrownFromCallback',
@@ -108,11 +121,15 @@ function _run(start,states={},opt={}){
 		else if(r===false)proc.Abort();
 		else if(r===true){
 			try{
+				if(trace_stmac)log.Trace(()=>name+':'+state_cur+' is ready');
+
 				// normal transition 
 				if(cur.OnReady)cur.OnReady(ctrl,proc);
 				poll_cur=poll_keep;
 			}
 			catch(e){
+				if(trace_stmac)log.Trace(()=>name+':'+state_cur+' thrown on ready',e);
+
 				happen.Happen(e,{
 					Class:'YgEs.StateMachine',
 					Cause:'ThrownFromCallback',
@@ -135,6 +152,8 @@ function _run(start,states={},opt={}){
 			var r=cur.OnPollInKeep?cur.OnPollInKeep(ctrl,proc):true;
 		}
 		catch(e){
+			if(trace_stmac)log.Trace(()=>name+':'+state_cur+' thrown on poll in keep',e);
+
 			happen.Happen(e,{
 				Class:'YgEs.StateMachine',
 				Cause:'ThrownFromCallback',
@@ -158,10 +177,14 @@ function _run(start,states={},opt={}){
 	}
 	let call_stop=(proc)=>{
 		try{
+			if(trace_stmac)log.Trace(()=>name+':'+state_cur+' is stop');
+
 			if(cur.OnStop)cur.OnStop(ctrl,proc);
 			poll_cur=poll_down;
 		}
 		catch(e){
+			if(trace_stmac)log.Trace(()=>name+':'+state_cur+' thrown on stop',e);
+
 			happen.Happen(e,{
 				Class:'YgEs.StateMachine',
 				Cause:'ThrownFromCallback',
@@ -178,6 +201,8 @@ function _run(start,states={},opt={}){
 			var r=cur.OnPollInDown?cur.OnPollInDown(ctrl,proc):true;
 		}
 		catch(e){
+			if(trace_stmac)log.Trace(()=>name+':'+state_cur+' thrown on poll in down',e);
+
 			happen.Happen(e,{
 				Class:'YgEs.StateMachine',
 				Cause:'ThrownFromCallback',
@@ -200,10 +225,14 @@ function _run(start,states={},opt={}){
 	}
 	let call_end=(proc)=>{
 		try{
+			if(trace_stmac)log.Trace(()=>name+':'+state_cur+' is end');
+
 			if(cur.OnEnd)cur.OnEnd(ctrl,proc);
 			call_start(proc);
 		}
 		catch(e){
+			if(trace_stmac)log.Trace(()=>name+':'+state_cur+' thrown on end',e);
+
 			happen.Happen(e,{
 				Class:'YgEs.StateMachine',
 				Cause:'ThrownFromCallback',
@@ -219,6 +248,7 @@ function _run(start,states={},opt={}){
 		Log:log,
 		HappenTo:happen,
 		User:user,
+		TraceProc:trace_proc,
 		OnStart:(proc)=>{
 			call_start(proc);
 		},

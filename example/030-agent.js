@@ -57,7 +57,7 @@ let workset2={
 	Launcher:launcher,
 	HappenTo:hap_local,
 	User:{Count:0},
-	Dependencies:{w1:AgentManager.Launch(workset1)},
+	Dependencies:[AgentManager.StandBy(workset1)],
 	OnOpen:(worker)=>{
 		Log.Info('Worker2 open');
 		worker.User.Count=0;
