@@ -72,7 +72,16 @@ async function _dirent(basedir,srcdir,deep,opt){
 function _world_new(){
 
 	let wt=YgEs.SoftClass();
-	wt.Extend('YgEs.HTTPServer.World',{},{});
+	wt.Extend('YgEs.HTTPServer.World',{
+		// private 
+	},{
+		// public 
+		Walk:(walker)=>{
+			// empty response 
+			walker.Response.writeHead(204,{'Content-Type':'text/plain'});
+			walker.Response.end();
+		},
+	});
 	return wt;
 }
 
@@ -330,6 +339,7 @@ let HTTPServer=YgEs.HTTPServer={
 
 	SetUp:_listener_new,
 
+	Empty:_world_new,
 	Serve:_serve_new,
 	Present:_present_new,
 	Route:_route_new,
