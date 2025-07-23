@@ -13,88 +13,104 @@ import Log from './logger.js';
 
 function _run(start,states={},opt={}){
 
-	const trace_proc=opt.TraceProc??null;
-	const trace_stmac=opt.TraceStMac??null;
+	start=YgEs.Validate(start,{Key:states,Nullable:true},'start');
+	states=YgEs.Validate(states,{Dict:true},'states');
+	opt=YgEs.Validate(opt,{Others:true,Struct:{
+		Name:{Literal:true,Default:'YgEs.StateMachine'},
+		User:{Struct:true},
+		Trace:{Boolable:true},
+		Trace_StMac:{Boolable:true},
+		Trace_Proc:{Boolable:true},
+		Log:{Class:'YgEs.LocalLog',Default:Log},
+		HappenTo:{Class:'YgEs.HappeningManager',Default:HappeningManager},
+		Launcher:{Class:'YgEs.Launcher',Default:Engine},
+		OnDone:{Callable:true},
+		OnAbort:{Callable:true},
+	}},'opt');
 
-	let launcher=opt.Launcher??Engine;
-	let cur=null;
+	let ctrl=YgEs.SoftClass(opt.Name,opt.User);
 
-	let name=opt.Name??'YgEs.StateMachine';
-	let log=opt.Log??Log;
-	let happen=opt.HappenTo??HappeningManager;
-	let user=opt.User??{};
+	let priv=ctrl.Extend('YgEs.StateMachine',{
+		// private 
+		tracing_stmac:opt.Trace||opt.Trace_StMac,
+		tracing_proc:opt.Trace||opt.Trace_Proc,
+		cur:null,
+		state_prev:null,
+		state_cur:null,
+		state_next:start,
 
-	let state_prev=null;
-	let state_cur=null;
-	let state_next=start;
+		trace:(msg)=>{
+			if(!priv.tracing_stmac)return;
+			ctrl.GetLogger().Trace(msg);
+		},
+	},{
+		// public 
+		SetTracing_StMac:(side)=>priv.tracing_stmac=!!side,
+		SetTracing_Proc:(side)=>{
+			priv.tracing_proc=!!side;
+			proc.SetTracing(priv.tracing_proc);
+		},
+		SetTracing:(side)=>{
+			SetTracing_StMac(side);
+			SetTracing_Proc(side);
+		},
 
-	let GetInfo=(site='')=>{
-		return {
-			Name:name,
-			CrashSite:site,
-			Prev:state_prev,
-			Cur:state_cur,
-			Next:state_next,
-			User:user,
-		}
-	}
-
-	let ctrl={
-		Name:name+'.Control',
-		User:user,
-		_private_:{},
-
-		GetLogger:()=>log,
-		GetHappeningManager:()=>happen,
-		GetPrevState:()=>state_prev,
-		GetCurState:()=>state_cur,
-		GetNextState:()=>state_next,
-		GetInfo:()=>GetInfo(),
-	}
+		GetLogger:()=>opt.Log,
+		GetHappeningManager:()=>opt.HappenTo,
+		GetPrevState:()=>priv.state_prev,
+		GetCurState:()=>priv.state_cur,
+		GetNextState:()=>priv.state_next,
+		GetInfo:(site='')=>{
+			return {
+				Name:ctrl.GetCaption(),
+				CrashSite:site,
+				Prev:priv.state_prev,
+				Cur:priv.state_cur,
+				Next:priv.state_next,
+				User:opt.User,
+			}
+		},
+	});
 
 	let poll_nop=(proc)=>{}
 	let poll_cur=poll_nop;
 
 	let call_start=(proc)=>{
-		if(state_next==null){
+		if(priv.state_next==null){
 			// normal end 
-			cur=null;
-			state_prev=state_cur;
-			state_cur=null;
+			priv.trace('end of statemachine');
+			priv.cur=null;
+			priv.state_prev=priv.state_cur;
+			priv.state_cur=null;
 			poll_cur=poll_nop;
-
-			if(trace_stmac)log.Trace(()=>name+' is end');
 			return;
 		}
-		cur=states[state_next]??null;
-		if(!cur){
-			if(trace_stmac)log.Trace(()=>name+':'+state_next+' is missed');
-
-			happen.Happen(
-				'Missing State: '+state_next,{
-				Class:'YgEs.StateMachine',
+		priv.cur=states[priv.state_next]??null;
+		if(!priv.cur){
+			priv.trace(priv.state_next+' missing');
+			opt.HappenTo.Happen(
+				'Missing State: '+priv.state_next,{
+				Source:ctrl.GetCaption(),
 				Cause:'MissingState',
-				Info:GetInfo('selecting'),
+				Info:ctrl.GetInfo('selecting'),
 			});
 			poll_cur=poll_nop;
 			return;
 		}
-		state_prev=state_cur;
-		state_cur=state_next;
-		state_next=null;
+		priv.state_prev=priv.state_cur;
+		priv.state_cur=priv.state_next;
+		priv.state_next=null;
 		try{
-			if(trace_stmac)log.Trace(()=>name+':'+state_cur+' is start');
-
-			if(cur.OnStart)cur.OnStart(ctrl,proc);
+			priv.trace(priv.state_cur+' start');
+			if(priv.cur.OnStart)priv.cur.OnStart(ctrl,proc);
 			poll_cur=poll_up;
 		}
 		catch(e){
-			if(trace_stmac)log.Trace(()=>name+':'+state_cur+' thrown on start',e);
-
-			happen.Happen(e,{
-				Class:'YgEs.StateMachine',
+			priv.trace(priv.state_cur+' crashed in OnStart');
+			opt.HappenTo.Happen(e,{
+				Source:ctrl.GetCaption(),
 				Cause:'ThrownFromCallback',
-				Info:GetInfo('OnStart'),
+				Info:ctrl.GetInfo('OnStart'),
 			});
 			poll_cur=poll_nop;
 			return;
@@ -104,15 +120,14 @@ function _run(start,states={},opt={}){
 	}
 	let poll_up=(proc)=>{
 		try{
-			var r=cur.OnPollInUp?cur.OnPollInUp(ctrl,proc):true;
+			var r=priv.cur.OnPollInUp?priv.cur.OnPollInUp(ctrl,proc):true;
 		}
 		catch(e){
-			if(trace_stmac)log.Trace(()=>name+':'+state_cur+' thrown on poll',e);
-
-			happen.Happen(e,{
-				Class:'YgEs.StateMachine',
+			priv.trace(priv.state_cur+' crashed in OnPollInUp');
+			opt.HappenTo.Happen(e,{
+				Source:ctrl.GetCaption(),
 				Cause:'ThrownFromCallback',
-				Info:GetInfo('OnPollInUp'),
+				Info:ctrl.GetInfo('OnPollInUp'),
 			});
 			poll_cur=poll_nop;
 			return;
@@ -121,19 +136,17 @@ function _run(start,states={},opt={}){
 		else if(r===false)proc.Abort();
 		else if(r===true){
 			try{
-				if(trace_stmac)log.Trace(()=>name+':'+state_cur+' is ready');
-
 				// normal transition 
-				if(cur.OnReady)cur.OnReady(ctrl,proc);
+				priv.trace(priv.state_cur+' ready');
+				if(priv.cur.OnReady)priv.cur.OnReady(ctrl,proc);
 				poll_cur=poll_keep;
 			}
 			catch(e){
-				if(trace_stmac)log.Trace(()=>name+':'+state_cur+' thrown on ready',e);
-
-				happen.Happen(e,{
-					Class:'YgEs.StateMachine',
+				priv.trace(priv.state_cur+' crashed in OnReady');
+				opt.HappenTo.Happen(e,{
+					Source:ctrl.GetCaption(),
 					Cause:'ThrownFromCallback',
-					Info:GetInfo('OnReady'),
+					Info:ctrl.GetInfo('OnReady'),
 				});
 				poll_cur=poll_nop;
 				return;
@@ -143,21 +156,21 @@ function _run(start,states={},opt={}){
 		}
 		else{
 			// interruption 
-			state_next=r.toString();
+			priv.state_next=r.toString();
+			priv.trace(priv.state_cur+' interrupted to '+priv.state_next);
 			call_end(proc);
 		}
 	}
 	let poll_keep=(proc)=>{
 		try{
-			var r=cur.OnPollInKeep?cur.OnPollInKeep(ctrl,proc):true;
+			var r=priv.cur.OnPollInKeep?priv.cur.OnPollInKeep(ctrl,proc):true;
 		}
 		catch(e){
-			if(trace_stmac)log.Trace(()=>name+':'+state_cur+' thrown on poll in keep',e);
-
-			happen.Happen(e,{
-				Class:'YgEs.StateMachine',
+			priv.trace(priv.state_cur+' crashed in OnPollInKeep');
+			opt.HappenTo.Happen(e,{
+				Source:ctrl.GetCaption(),
 				Cause:'ThrownFromCallback',
-				Info:GetInfo('OnPollInKeep'),
+				Info:ctrl.GetInfo('OnPollInKeep'),
 			});
 			poll_cur=poll_nop;
 			return;
@@ -166,29 +179,29 @@ function _run(start,states={},opt={}){
 		else if(r===false)proc.Abort();
 		else if(r===true){
 			// normal end 
-			state_next=null;
+			priv.trace(priv.state_cur+' will terminate');
+			priv.state_next=null;
 			call_stop(proc);
 		}
 		else{
 			// normal transition 
-			state_next=r.toString();
+			priv.state_next=r.toString();
+			priv.trace(priv.state_cur+' will transit to '+priv.state_next);
 			call_stop(proc);
 		}
 	}
 	let call_stop=(proc)=>{
 		try{
-			if(trace_stmac)log.Trace(()=>name+':'+state_cur+' is stop');
-
-			if(cur.OnStop)cur.OnStop(ctrl,proc);
+			priv.trace(priv.state_cur+' stop');
+			if(priv.cur.OnStop)priv.cur.OnStop(ctrl,proc);
 			poll_cur=poll_down;
 		}
 		catch(e){
-			if(trace_stmac)log.Trace(()=>name+':'+state_cur+' thrown on stop',e);
-
-			happen.Happen(e,{
-				Class:'YgEs.StateMachine',
+			priv.trace(priv.state_cur+' crashed in OnStop');
+			opt.HappenTo.Happen(e,{
+				Source:ctrl.GetCaption(),
 				Cause:'ThrownFromCallback',
-				Info:GetInfo('OnStop'),
+				Info:ctrl.GetInfo('OnStop'),
 			});
 			poll_cur=poll_nop;
 			return;
@@ -198,15 +211,14 @@ function _run(start,states={},opt={}){
 	}
 	let poll_down=(proc)=>{
 		try{
-			var r=cur.OnPollInDown?cur.OnPollInDown(ctrl,proc):true;
+			var r=priv.cur.OnPollInDown?priv.cur.OnPollInDown(ctrl,proc):true;
 		}
 		catch(e){
-			if(trace_stmac)log.Trace(()=>name+':'+state_cur+' thrown on poll in down',e);
-
-			happen.Happen(e,{
-				Class:'YgEs.StateMachine',
+			priv.trace(priv.state_cur+' crashed in OnPollInDown');
+			opt.HappenTo.Happen(e,{
+				Source:ctrl.GetCaption(),
 				Cause:'ThrownFromCallback',
-				Info:GetInfo('OnPollInDown'),
+				Info:ctrl.GetInfo('OnPollInDown'),
 			});
 			poll_cur=poll_nop;
 			return;
@@ -215,54 +227,63 @@ function _run(start,states={},opt={}){
 		else if(r===false)proc.Abort();
 		else if(r===true){
 			// normal transition 
+			priv.trace(priv.state_cur+' end');
 			call_end(proc);
 		}
 		else{
 			// interruption 
-			state_next=r.toString();
+			priv.state_next=r.toString();
+			priv.trace(priv.state_cur+' interrupted to '+priv.state_next);
 			call_end(proc);
 		}
 	}
 	let call_end=(proc)=>{
 		try{
-			if(trace_stmac)log.Trace(()=>name+':'+state_cur+' is end');
-
-			if(cur.OnEnd)cur.OnEnd(ctrl,proc);
+			if(priv.cur.OnEnd)priv.cur.OnEnd(ctrl,proc);
 			call_start(proc);
 		}
 		catch(e){
-			if(trace_stmac)log.Trace(()=>name+':'+state_cur+' thrown on end',e);
-
-			happen.Happen(e,{
-				Class:'YgEs.StateMachine',
+			priv.trace(priv.state_cur+' crashed in OnEnd');
+			opt.HappenTo.Happen(e,{
+				Source:ctrl.GetCaption(),
 				Cause:'ThrownFromCallback',
-				Info:GetInfo('OnEnd'),
+				Info:ctrl.GetInfo('OnEnd'),
 			});
 			poll_cur=poll_nop;
 			return;
 		}
 	}
 
-	let stmac={
-		Name:name+'.Proc',
-		Log:log,
-		HappenTo:happen,
-		User:user,
-		TraceProc:trace_proc,
+	let proc=opt.Launcher.Launch({
+		Name:opt.Name+'.Proc',
+		Trace:priv.tracing_proc,
+		Log:opt.Log,
+		HappenTo:opt.HappenTo,
+		User:opt.User,
 		OnStart:(proc)=>{
 			call_start(proc);
 		},
 		OnPoll:(proc)=>{
 			poll_cur(proc);
-			return !!cur;
+			return !!priv.cur;
 		},
-		OnDone:opt.OnDone??null,
-		OnAbort:opt.OnAbort??null,
-	}
+		OnDone:opt.OnDone,
+		OnAbort:opt.OnAbort,
+	});
 
-	let proc=launcher.Launch(stmac);
-	let ProcInfo=proc.GetInfo;
-	proc.GetInfo=()=>Object.assign(ProcInfo(),{StateMachine:GetInfo()});
+	proc.Trait('YgEs.StateMachine.Proc');
+	const proc_GetInfo=proc.Inherit('GetInfo',()=>{
+		return {
+			StateMachine:{
+				Name:ctrl.GetCaption(),
+				Prev:priv.state_prev,
+				Cur:priv.state_cur,
+				Next:priv.state_next,
+			},
+			Procedure:proc_GetInfo('ProcInfo'),
+		}
+	});
+
 	ctrl.IsStarted=proc.IsStarted;
 	ctrl.IsFinished=proc.IsFinished;
 	ctrl.IsAborted=proc.IsAborted;
