@@ -32,7 +32,7 @@ function _target(dir,parent){
 			wk.WaitFor('MkDir done',()=>{return done;});
 		},
 	};
-	if(parent)ws.Dependencies=[parent]
+	if(parent)ws.Dependencies=[parent.Fetch()]
 	var wk=AgentManager.StandBy(ws);
 
 	wk.GetPath=()=>dir;
