@@ -32,44 +32,41 @@ let workset1={
 		Test.ChkStrict(agent.IsBusy(),false);
 	},
 }
-let agent1=AgentManager.StandBy(workset1);
 
 let workset2={
 	User:{Count:0},
-	Dependencies:[agent1],
+	Dependencies:{w1:AgentManager.Launch(workset1)},
 	OnOpen:(agent)=>{
 		Test.ChkStrict(agent.IsBusy(),true);
 	},
 	OnReady:(agent)=>{
 		Test.ChkStrict(agent.IsReady(),true);
-		Test.ChkStrict(agent1.IsOpen(),true);
+		Test.ChkStrict(agent.GetDependencies().w1.IsOpenAgent(),true);
 
 		handle.Close();
 		Test.ChkStrict(agent.IsOpen(),false);
 	},
 	OnClose:(agent)=>{
 		Test.ChkStrict(agent.IsReady(),false);
-		Test.ChkStrict(agent1.IsOpen(),false);
+		Test.ChkStrict(agent.GetDependencies().w1.IsOpenAgent(),false);
 	},
 	OnFinish:(agent)=>{
 		Test.ChkStrict(agent.IsBusy(),false);
 	},
 }
-let agent2=AgentManager.StandBy(workset2);
 
 const scenaria=[
 	{
 		Title:'Agent Dependencies',
 		Proc:async (tool)=>{
-			workset1.Log=tool.Log;
-			workset2.Log=tool.Log;
 			workset1.Launcher=tool.Launcher;
 			workset2.Launcher=tool.Launcher;
 			workset1.HappenTo=tool.HappenTo;
 			workset2.HappenTo=tool.HappenTo;
 
-			handle=agent2.Open();
-			Test.ChkStrict(agent2.IsOpen(),true);
+			agent=AgentManager.StandBy(workset2);
+			handle=agent.Open();
+			Test.ChkStrict(agent.IsOpen(),true);
 
 			await tool.Launcher.ToPromise();
 		},
