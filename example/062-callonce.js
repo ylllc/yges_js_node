@@ -11,12 +11,13 @@ import HappeningManager from '../api/happening.js';
 import Log from '../api/logger.js';
 
 // Example: Call Once API --------------- //
+Log.Showable=Log.LEVEL.TRACE;
 
 // start the Engine 
 Engine.Start();
 
 // for environment 
-let log_local=Log.CreateLocal('NetworkTest',Log.LEVEL.DEBUG);
+let log_local=Log.CreateLocal('NetworkTest');
 let launcher=Engine.CreateLauncher();
 let hap_local=HappeningManager.CreateLocal({
 	OnHappen:(hm,hap)=>{log_local.Fatal(hap.GetProp());},
@@ -42,9 +43,9 @@ const recvopt={
 	Log:log_local,
 	Launcher:launcher,
 	HappenTo:hap_local,
-	TraceAgent:false,
-	TraceStMac:false,
-	TraceProc:false,
+	Trace_Agent:false,
+	Trace_StMac:false,
+	Trace_Proc:false,
 	// (for tough test) insert random msec delay 
 	DelayMin:0,
 	DelayMax:400,
@@ -55,7 +56,7 @@ const recvopt={
 //	DubIntervalMin:0,
 //	DubIntervalMax:500,
 	// (for tough test) maybe cutoff during receiving 
-	OnGate:(recver,from,packed)=>{
+	OnGate:(recver,packed)=>{
 //		if(Math.random()<0.25)return packed.substring(0,Math.random()*packed.length);
 		return packed;
 	},
@@ -64,6 +65,9 @@ const recvopt={
 // receiver 
 let recv_host=Network.CreateReceiver(recvopt);
 let recv_guest=Network.CreateReceiver(recvopt);
+
+recv_host.SetTracing_Receiver(false);
+recv_guest.SetTracing_Receiver(false);
 
 // sender setting
 const sendopt={
@@ -96,11 +100,11 @@ const tpopt={
 	TraceAgent:false,
 	TraceStMac:false,
 	TraceProc:false,
+	PIDPrefix:'Exam061',
 	PayloadSpecs:pld_specs,
 }
 
 let tp_host=Network.CreateTransport(Object.assign(tpopt,{
-	Dependencies:[recv_host,send_host],
 	PayloadHooks:{
 		STATE_REQ:{
 			OnHanding:(tp,payload)=>{
@@ -125,9 +129,11 @@ let tp_host=Network.CreateTransport(Object.assign(tpopt,{
 }));
 tp_host.AttachReceiver('port_host',recv_host);
 tp_host.AttachSender('port_host',send_host);
-tp_host.AttachSelector((tp,to)=>'port_host');
+tp_host.SetSelector((tp,to)=>'port_host');
+tp_host.SetTracing_Transport(false);
+tp_host.SetTracing_Agent(false);
+
 let tp_guest=Network.CreateTransport(Object.assign(tpopt,{
-	Dependencies:[recv_guest,send_guest],
 	PayloadHooks:{
 		STATE_REP:{
 			OnReplied:(tp,prot,payload)=>{
@@ -142,7 +148,9 @@ let tp_guest=Network.CreateTransport(Object.assign(tpopt,{
 }));
 tp_guest.AttachReceiver('port_guest',recv_guest);
 tp_guest.AttachSender('port_guest',send_guest);
-tp_guest.AttachSelector((tp,to)=>'port_guest');
+tp_guest.SetSelector((tp,to)=>'port_guest');
+tp_guest.SetTracing_Transport(false);
+tp_guest.SetTracing_Agent(false);
 
 // endpoint setting
 const epopt={
@@ -155,6 +163,10 @@ let ep_host=Network.CreateEndPoint(epopt).Open();
 let ep_guest1=Network.CreateEndPoint(epopt).Open();
 let ep_guest2=Network.CreateEndPoint(epopt).Open();
 
+ep_host.SetTracing_EndPoint(false);
+ep_guest1.SetTracing_EndPoint(false);
+ep_guest2.SetTracing_EndPoint(false);
+
 tp_host.Connect('host',ep_host);
 tp_guest.Connect('guest1',ep_guest1);
 tp_guest.Connect('guest2',ep_guest2);
@@ -164,10 +176,11 @@ tp_guest.Connect('guest2',ep_guest2);
 	// wait for endpoints ready 
 	await Timing.SyncKit(1000,()=>ep_host.IsReady()).ToPromise();
 	await Timing.SyncKit(1000,()=>ep_guest1.IsReady()).ToPromise();
+	await Timing.SyncKit(1000,()=>ep_guest2.IsReady()).ToPromise();
 
 	// create a Protocol to wait reply 
-	let prot1=tp_guest.NewProtocol('guest1');
-	let prot2=tp_guest.NewProtocol('guest2');
+	let prot1=tp_guest.NewProtocol('guest1',{Name:'ProtocolTest1'});
+	let prot2=tp_guest.NewProtocol('guest2',{Name:'ProtocolTest2'});
 
 	// request to the host 
 	prot1.Send(null,'STATE_REQ');

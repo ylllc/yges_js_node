@@ -10,12 +10,13 @@ import HappeningManager from '../api/happening.js';
 import Log from '../api/logger.js';
 
 // Example: Protocol Simulation --------- //
+Log.Showable=Log.LEVEL.TRACE;
 
 // start the Engine 
 Engine.Start();
 
 // for environment 
-let log_local=Log.CreateLocal('NetworkTest',Log.LEVEL.DEBUG);
+let log_local=Log.CreateLocal('NetworkProtocolTest');
 let launcher=Engine.CreateLauncher();
 let hap_local=HappeningManager.CreateLocal({
 	OnHappen:(hm,hap)=>{log_local.Fatal(hap.GetProp());},
@@ -32,9 +33,9 @@ const recvopt={
 	Log:log_local,
 	Launcher:launcher,
 	HappenTo:hap_local,
-	TraceAgent:false,
-	TraceStMac:false,
-	TraceProc:false,
+	Trace_Agent:false,
+	Trace_StMac:false,
+	Trace_Proc:false,
 	// (for tough test) insert random msec delay 
 	DelayMin:0,
 	DelayMax:400,
@@ -45,7 +46,7 @@ const recvopt={
 //	DubIntervalMin:0,
 //	DubIntervalMax:500,
 	// (for tough test) maybe cutoff during receiving 
-	OnGate:(recver,from,packed)=>{
+	OnGate:(recver,packed)=>{
 //		if(Math.random()<0.25)return packed.substring(0,Math.random()*packed.length);
 		return packed;
 	},
@@ -55,23 +56,19 @@ const recvopt={
 let recv_host=Network.CreateReceiver(recvopt);
 let recv_guest=Network.CreateReceiver(recvopt);
 
+recv_host.SetTracing_Receiver(false);
+recv_guest.SetTracing_Receiver(false);
+
 // sender setting
 const sendopt={
 	Log:log_local,
 	Launcher:launcher,
 	HappenTo:hap_local,
-	TraceAgent:false,
-	TraceStMac:false,
-	TraceProc:false,
 	// (for tough test) insert random msec delay 
 	DelayMin:0,
 	DelayMax:400,
-	// (for tough test) maybe break ordering by delay 
-//	Unorderable:true,
-	// (for tough test) ratio of dubbed packet on received 
-//	DubRatio:0.25,
-//	DubIntervalMin:0,
-//	DubIntervalMax:500,
+	// (for tough test) ratio of short packet on sending 
+	Hurting:0.0,
 }
 
 // sender 
@@ -86,19 +83,19 @@ const tpopt={
 	TraceAgent:false,
 	TraceStMac:false,
 	TraceProc:false,
+	PIDPrefix:'Exam061',
 	PayloadSpecs:pld_specs,
 	PayloadHooks:{
 		HELLO:{
 			OnRequest:(tp,payload)=>{
 
 				// create a Protocol for continue communicating 
-				let prot=tp.NewProtocol('host');
+				let prot=tp.NewProtocol('host',{Name:'Replying'});
 				if(!prot)return;
 
-				log_local.Info('Protocol ('+prot.GetPID()+') created by requested',payload);
+				log_local.Info('Protocol ('+prot.GetPID()+') created by requested HELLO',payload);
 
 				// replying 
-				// (host does not know guest's EndPoint name) 
 				prot.Send(null,'HI','Hi, '+payload.From);
 			},
 		},
@@ -106,7 +103,7 @@ const tpopt={
 			OnHanding:(tp,payload)=>{
 
 				// calling by,
-				// - first replied from requested 
+				// - first replied by requested 
 				// - restart communicating in an abandoned Protocol 
 
 				log_local.Info('Protocol accepted',payload);
@@ -125,14 +122,21 @@ const tpopt={
 	},
 }
 
-let tp_host=Network.CreateTransport(Object.assign(tpopt,{Dependencies:[recv_host,send_host]}));
+let tp_host=Network.CreateTransport(tpopt);
+tp_host.SetTracing_Transport(false);
+tp_host.SetTracing_Agent(false);
+
+let tp_guest=Network.CreateTransport(tpopt);
+tp_guest.SetTracing_Transport(false);
+tp_guest.SetTracing_Agent(false);
+
 tp_host.AttachReceiver('port_host',recv_host);
 tp_host.AttachSender('port_host',send_host);
-tp_host.AttachSelector((tp,to)=>'port_host');
-let tp_guest=Network.CreateTransport(Object.assign(tpopt,{Dependencies:[recv_guest,send_guest]}));
+tp_host.SetSelector((tp,target)=>'port_host');
+
 tp_guest.AttachReceiver('port_guest',recv_guest);
 tp_guest.AttachSender('port_guest',send_guest);
-tp_guest.AttachSelector((tp,to)=>'port_guest');
+tp_guest.SetSelector((tp,target)=>'port_guest');
 
 // endpoint setting
 const epopt={
@@ -144,6 +148,9 @@ const epopt={
 let ep_host=Network.CreateEndPoint(epopt).Open();
 let ep_guest=Network.CreateEndPoint(epopt).Open();
 
+ep_host.SetTracing_EndPoint(false);
+ep_guest.SetTracing_EndPoint(false);
+
 tp_host.Connect('host',ep_host);
 tp_guest.Connect('guest',ep_guest);
 
@@ -152,6 +159,8 @@ tp_guest.Connect('guest',ep_guest);
 	// wait for endpoints ready 
 	await Timing.SyncKit(1000,()=>ep_host.IsReady()).ToPromise();
 	await Timing.SyncKit(1000,()=>ep_guest.IsReady()).ToPromise();
+
+	Log.Info('all ready');
 
 	// start a communicating 
 	ep_guest.Send(null,'HELLO','hello, Host');

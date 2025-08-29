@@ -10,324 +10,6 @@ import Log from './logger.js';
 // Network Drivers ---------------------- //
 (()=>{ // local namespace 
 
-//const _default_spec={
-//	QuickCall:false,
-//	CallOnce:{
-//		Limit:false,
-//		Reply:null,
-//		Timeout:null,
-//	},
-//}
-//
-//function _transport_new(opt={}){
-//
-//	const hurting=opt.Hurting??0.0;
-//	const unorderable=opt.Unorderable??false;
-//	const delay_min=opt.DelayMin??0;
-//	const delay_max=opt.DelayMax??0;
-//
-//	const onOpen=opt.OnOpen??((agent)=>{});
-//	const onClose=opt.OnClose??((agent)=>{});
-//	const onReady=opt.OnReady??((agent)=>{});
-//	const onPack=opt.OnPack??((tp,ep_from,remote_epid_to,payload)=>{
-//		return JSON.stringify({SenderEPID:ep_from.GetInstanceID(),/*ReceiverEPID:remote_epid_to,*/Payload:payload});
-//	});
-//	const onUnpack=opt.OnUnpack??((tp,pack)=>{
-//		return JSON.parse(pack);
-//	});
-//	const onExtractSenderEPID=opt.OnExtractSenderEPID??((tp,data)=>{
-//		return data.SenderEPID;
-//	});
-////	const onExtractReceiverEPID=opt.OnExtractReceiverEPID??((data)=>{
-////		return data.ReceiverEPID;
-////	});
-//	const onExtractPayloadArray=opt.OnExtractPayloadArray??((data)=>{
-//		return data.Payload;
-//	});
-//	const onExtractPayloadType=opt.OnExtractPayloadType??((payload)=>null);
-//	const onExtractSessionID=opt.OnExtractSessionID??((payload)=>null);
-//	const onSend=opt.OnSend??((tp,ep_from,remote_epid_to,pack)=>{
-//		tp.GetLogger().Tick(()=>'terminated transport: '+pack);
-//	});
-//	const plss=opt.PayloadSpecs??{}
-//	const plrs=opt.PayloadReceivers??null
-//
-//	for(let plt in plss){
-//		plss[plt]=YgEs.SetDefault(plss[plt],_default_spec);
-//		plss[plt]._private_={
-//			UnlockTarget:[],
-//		}
-//	}
-//
-//	let prm=Object.assign({},opt,{
-//		AgentBypasses:['GetPayloadSpec','GetEndPoint','ExtractPayloadType','Send','Receive',
-//			'AttachSession','DetachSession'],
-//		OnOpen:(agent)=>{
-//			onOpen(agent);
-//		},
-//		OnClose:(agent)=>{
-//			for(let sh of Object.values(tp._private_.session)){
-//				sh.Close();
-//			}
-//			tp._private_.session={}
-//
-//			onClose(agent);
-//			if(tp._private_.host)tp._private_.host.Close();
-//		},
-//		OnReady:(agent)=>{
-//			onReady(agent);
-//			if(tp._private_.host)tp._private_.host.Open();
-//		},
-//	});
-//	if(!prm.Name)prm.Name='YgEs.Transport.Driver';
-//
-//	let tp=YgEs.AgentManager.StandBy(prm);
-//	tp._private_.endpoint={}
-//	tp._private_.session={}
-//
-//	for(let plt in plss){
-//		let pls_s=plss[plt];
-//		if(pls_s.CallOnce.Limit && pls_s.CallOnce.Reply!=null){
-//			let pls_d=plss[pls_s.CallOnce.Reply];
-//			if(!pls_d){
-//				tp.GetLogger().Warn('PayloadType '+pls_s.CallOnce.Reply+' not defined for unlock PayloadType '+plt);
-//			}
-//			else{
-//				pls_d._private_.UnlockTarget.push(plt);
-//			}
-//		}
-//
-//		pls_s._private_.OnReceived=(ep,ep_from)=>{
-//			for(let plt2 of pls_s._private_.UnlockTarget){
-//				ep.UnlockOnce(ep_from,plt2);
-//			}
-//		}
-//	}
-//
-//	tp.GetPayloadSpec=(plt)=>{
-//		return plss[plt]??null;
-//	}
-//	tp.GetEndPoint=(epid)=>{
-//		if(epid!=null)return tp._private_.endpoint[epid]??null;
-//		if(!tp._private_.host)return null;
-//		return tp._private_.host.GetAgent();
-//	}
-//	tp.ExtractPayloadType=(payload)=>{
-//		return onExtractPayloadType(payload);
-//	}
-//	tp.IsUnorderable=()=>unorderable;
-//	tp.MakeDelay=()=>{
-//		if(delay_max<1)return 0;
-//		return delay_min+Math.random()*(delay_max-delay_min);
-//	}
-//
-//	const checkReady=()=>{
-//		if(!tp.IsReady()){
-//			tp.GetLogger().Fatal('Transport '+tp.Name+' is not ready');
-//			return false;
-//		}
-//		return true;
-//	}
-//
-//	const handleFetch=tp.Fetch;
-//	tp.Fetch=()=>{
-//		let h=handleFetch();
-//		h.Connect=tp.Connect;
-//		return h;
-//	}
-//
-//	tp._private_.connect=(ep)=>{
-//		let epid=ep.GetInstanceID();
-//		if(tp._private_.endpoint[epid]){
-//			tp.GetLogger().Notice('EndPoint '+epid+' was overriden in Transport ('+tp.Name+')');
-//		}
-//		tp._private_.endpoint[epid]=ep;
-//	}
-//	tp._private_.disconnect=(ep)=>{
-//		let epid=ep.GetInstanceID();
-//		if(!tp._private_.endpoint[epid])return;
-//		delete tp._private_.endpoint[epid];
-//	}
-//
-//	tp._private_.send=(ep_from,remote_epid_to,sendq)=>{
-//		if(!checkReady())return;
-//		try{
-//			let local_epid=ep_from.GetInstanceID();
-//			tp.GetLogger().Tick(()=>'Transport sending '+local_epid+'=>'+remote_epid_to,sendq);
-//
-//			let pack=onPack(tp,ep_from,remote_epid_to,sendq);
-//			if(hurting>0){
-//				if(Math.random()<hurting){
-//					// packet short test 
-//					pack=pack.substring(0,Math.random()*pack.substring.length);
-//				}
-//			}
-//
-//			// send now 
-//			onSend(tp,ep_from,remote_epid_to,pack);
-//		}
-//		catch(e){
-//			tp.GetLogger().Fatal('Transport error at send: '+e.toString(),YgEs.FromError(e));
-//		}
-//	}
-//
-//	tp.Launch=(remote_epid_to,payload)=>{
-//		if(!tp._private_.host){
-//			tp.GetLogger().Fatal('Host not attached for send');
-//			return;
-//		}
-//		return tp._private_.host.Launch(remote_epid_to,payload);
-//	}
-//
-//	tp.Kick=(remote_epid_to=null)=>{
-//		if(!tp._private_.host){
-//			tp.GetLogger().Fatal('Host not attached for send');
-//			return;
-//		}
-//		return tp._private_.host.Kick(remote_epid_to);
-//	}
-//
-//	tp.Send=(remote_epid_to,payload)=>{
-//		if(!tp._private_.host){
-//			tp.GetLogger().Fatal('Host not attached for send');
-//			return;
-//		}
-//		return tp._private_.host.Send(remote_epid_to,payload);
-//	}
-//
-//	tp.Receive=(local_epid_from,local_epid_to,pack)=>{
-//		if(!checkReady())return;
-//
-//		tp.GetLogger().Tick(()=>'Transport received to '+local_epid_to+': '+pack);
-//
-//		let data=onUnpack(tp,pack);
-////		let remote_epid_from=onExtractSenderEPID(tp,data);
-//		let ep_to=tp.GetEndPoint(local_epid_to);
-//
-//		if(!ep_to){
-//			tp.GetLogger().Notice(()=>((local_epid_to==null)?'Host':('EndPoint '+local_epid_to))+' not found in Transport '+tp.Name);
-//			return;
-//		}
-//
-//		try{
-//			let pla=onExtractPayloadArray(data);
-//			if(!Array.isArray(pla)){
-//				tp.GetLogger().Notice(()=>'No payloads: ',data);
-//			}
-//			else for(let pl of pla){
-//
-//				let sid=onExtractSessionID(pl);
-//				if(sid){
-//					// receive for a session 
-//					let sess=tp._private_.session[sid];
-//					if(!sess){
-//						tp.GetLogger().Notice(()=>'Unknown session: '+sid);
-//					}
-//					else{
-//						let plt=onExtractPayloadType(pl);
-//						sess.GetAgent()._private_.receive(ep_to,local_epid_from,plt,pl);
-//					}
-//				}
-//				else if(!plrs){
-//					// receive plain payload 
-//					ep_to._private_.receive(local_epid_from,pl);
-//				}
-//				else{
-//					// receive by payload type 	
-//					let plt=onExtractPayloadType(pl);
-//					let pls=(plt==null)?null:plss[plt];
-//					let plr=(plt==null)?null:plrs[plt];
-//					if(!plr){
-//						tp.GetLogger().Notice(()=>'Receiver not defined: '+plt);
-//					}
-//					else if(!pls?.QuickCall){
-//						// call queue 
-//						tp.GetLogger().Tick(()=>'Payload queued '+local_epid_from+' => '+local_epid_to,pl);
-//						ep_to._private_.recvq.push({
-//							From:local_epid_from,
-//							Payload:pl,
-//							Spec:pls,
-//							Call:()=>{
-//								pls._private_.OnReceived(ep_to,local_epid_from);
-//								plr(ep_to,local_epid_from,pl);
-//							},
-//						});
-//					}
-//					else{
-//						// call now 
-//						pls._private_.OnReceived(ep_to,local_epid_from);
-//						plr(ep_to,local_epid_from,pl);
-//					}
-//				}
-//			}
-//		}
-//		catch(e){
-//			tp.GetLogger().Fatal('Transport error at unpack: '+e.toString(),YgEs.FromError(e));
-//		}
-//	}
-//
-//	tp.AttachSession=(sess)=>{
-//		let sid=sess.GetInstanceID();
-//		if(tp._private_.session[sid]){
-//			tp.GetLogger().Warn(()=>'Session '+sid+' already attached');
-//			return sess;
-//		}
-//		tp._private_.session[sid]=sess.Open();
-//		return sess;
-//	}
-//
-//	tp.DetachSession=(sess)=>{
-//		let sid=sess.GetInstanceID();
-//		let sh=tp._private_.session[sid];
-//		if(!sh){
-//			tp.GetLogger().Warn(()=>'Session '+sid+' not attached');
-//			return;
-//		}
-//		sh.Close();
-//		delete tp._private_.session[sid];
-//	}
-//
-//	tp._private_.host=opt.HasHost?EndPoint.Create(tp,{
-//		Log:tp.GetLogger(),
-//		Launcher:tp.GetLauncher(),
-//		HappenTo:tp.GetHappeningManager(),
-//		OnReceived:opt.OnReceived,
-//		EPID:null,
-//	}).Fetch():null;
-//
-//	return tp;
-//}
-//
-//function _loopback_new(opt={}){
-//
-//	let prm=Object.assign({},opt,{
-//		Name:'YgEs.Transport.Loopback',
-//		OnSend:(tp,ep_from,remote_epid_to,pack)=>{
-//			tp.Receive(remote_epid_to,pack);
-//		},
-//	});
-//	if(opt.Log)prm.Log=opt.Log;
-//	if(opt.Launcher)prm.Launcher=opt.Launcher;
-//	if(opt.HappenTo)prm.HappenTo=opt.HappenTo;
-//
-//	let tp=_transport_new(prm);
-//	return tp;
-//}
-//
-//function _terminate_new(opt={}){
-//
-//	let prm=Object.assign({},opt,{
-//		Name:'YgEs.Transport.Terminate',
-//	});
-//	if(opt.Log)prm.Log=opt.Log;
-//	if(opt.Launcher)prm.Launcher=opt.Launcher;
-//	if(opt.HappenTo)prm.HappenTo=opt.HappenTo;
-//
-//	return _transport_new(prm);
-//}
-
-
-
 function _recvctrl_new(){
 
 	let ct={
@@ -354,79 +36,165 @@ function _recvctrlset_new(){
 
 function _receiver_new(opt={}){
 
-	let log=opt.Log??Log;
+	opt=YgEs.Validate(opt,{Others:true,Struct:{
+		Name:{Literal:true,Default:'YgEs.Receiver'},
+		Trace_Receiver:{Boolable:true},
+		Log:{Class:'YgEs.LocalLog',Default:Log},
+		AgentBypasses:{List:{Literal:true}},
+		Unorderable:{Boolable:true,Default:false},
+		DelayMin:{Integer:true,Default:0},
+		DelayMax:{Integer:true,Default:0},
+		DubRatio:{Numeric:true,Default:0.0},
+		DubIntervalMin:{Integer:true,Default:0},
+		DubIntervalMax:{Integer:true,Default:0},
+		OnGate:{Callable:true,Default:(recver,packed)=>packed},
+		OnDecode:{Callable:true,Default:(recver,packed)=>{
+			try{
+				return JSON.parse(packed);
+			}
+			catch(e){
+				return null;
+			}
+		}},
+	}},'opt');
 
-	let unorderable=opt.Unorderable??false;
-	let delay_min=opt.DelayMin??0;
-	let delay_max=opt.DelayMax??0;
-	let dub_ratio=opt.DubRatio??0;
-	let dub_interval_min=opt.DubIntervalMin??0;
-	let dub_interval_max=opt.DubIntervalMax??0;
-
-	let prm=YgEs.Customize(opt,{
-		Name:'YgEs.Receiver',
-		Log:{Class:'YgEs.Logger'},
-		Launcher:{Class:'YgEs.Laungher'},
-		HappenTo:{Class:'YgEs.HappeningManager'},
-		Dependencies:{List:true,Init:[],Class:'YgEs.Agent'},
-		TraceAgent:{Mono:true,Init:null},
-		TraceStMac:{Mono:true,Init:null},
-		TraceProc:{Mono:true,Init:null},
-	},log);
-
-	prm.AgentBypasses=['Receive']
-
-	const onOpen=opt.OnOpen??((agent)=>{});
-	prm.OnOpen=(agent)=>{
-		onOpen(agent);
-	}
+	opt.AgentBypasses.push('IsConnected','GetConnectionName',
+		'GetTransport','CutOff','Receive');
 
 	const onClose=opt.OnClose??((agent)=>{});
-	prm.OnClose=(agent)=>{
+	opt.OnClose=(agent)=>{
+
+		recver.CutOff();
 		onClose(agent);
 	}
 
-	const onReady=opt.OnReady??((agent)=>{});
-	prm.OnReady=(agent)=>{
-		onReady(agent);
-	}
-
-	const onGate=opt.OnGate??((recver,from,packed)=>packed);
-
-	const onDecode=opt.OnDecode??((recver,from,packed)=>{
-		try{
-			return JSON.parse(packed);
-		}
-		catch(e){
-			return null;
-		}
-	});
-
-	let priv={
-		// control set 
-		cset:_recvctrlset_new(),
-		// attaching Transport 
-		tp:null,
-	}
-
-	let recver=Agent.StandBy(prm);
-	recver._private_.recv=priv;
-
-	const launch=recver.GetLauncher().CreateLauncher({Limit:unorderable?-1:1});
-
 	const checkReady=()=>{
 		if(!recver.IsReady()){
-			log.Fatal('Receiver ('+recver.Name+') is not ready');
+			log.Fatal('Receiver ('+recver.GetCaption()+') is not ready');
 			return false;
 		}
 		return true;
 	}
 
+	const callRecv=(contents)=>{
+
+		let tp=recver.GetTransport();
+		if(!tp){
+			log.Warn('Notice ('+recver.GetCaption()+') already cutoff',contents);
+			return;
+		}
+		tp._recv(contents);
+
+		if(opt.DubRatio<=0)return;
+		if(Math.random()>=opt.DubRatio)return;
+
+		let delay=(opt.DubIntervalMax<1)?0:
+			(opt.DubIntervalMin+Math.random()*(opt.DubIntervalMax-opt.DubIntervalMin));
+		launch.Delay(delay,()=>callRecv(contents));
+	}
+
+	let log=opt.Log;
+	let recver=Agent.StandBy(opt);
+	const launch=recver.GetLauncher().CreateLauncher({Limit:opt.Unorderable?-1:1});
+	const priv=recver.Extend('YgEs.Receiver',{
+		// private 
+
+		// control set 
+		cset:_recvctrlset_new(),
+		// handle for conecting Transport 
+		h4t:null,
+
+		tracing_receiver:opt.Trace||opt.Trace_Receiver,
+
+		trace:(msg)=>{
+			if(!priv.tracing_receiver)return;
+			log.Trace(msg);
+		},
+	},{
+		// public
+		SetTracing_Receiver:(side)=>priv.tracing_receiver=!!side,
+
+		IsConnected:()=>!!priv.h4t,
+		GetConnectionName:()=>{
+			if(!priv.h4t)return undefined;
+			return priv.h4t.GetConnectionName();
+		},
+		GetTransport:()=>{
+			if(!priv.h4t)return undefined;
+			return priv.h4t.GetTransport();
+		},
+		CutOff:()=>{
+			let rh=priv.h4t;
+			if(!rh)return;
+			priv.h4t=null;
+			rh.Close();
+		},
+
+		Receive:(packed)=>{
+
+			if(!priv.h4t){
+				priv.trace(()=>'Receiver ('+recver.GetCaption()+') not attached to a Transport, abandon it');
+				return;
+			}
+			if(!recver.IsReady()){
+				priv.trace(()=>'Receiver ('+recver.GetCaption()+') received, but out of the service, abandon it');
+				return;
+			}
+
+			packed=opt.OnGate(recver,packed);
+			if(!packed){
+				priv.trace(()=>'Receiver ('+recver.GetCaption()+') received invalid');
+				return;
+			}
+
+			let contents=opt.OnDecode(recver,packed);
+			if(!contents){
+				priv.trace(()=>'Receiver ('+recver.GetCaption()+') received broken');
+				return;
+			}
+
+			priv.trace(()=>'Receiver ('+recver.GetCaption()+') received');
+
+			if(opt.DelayMax<1){
+				callRecv(contents);
+			}
+			else{
+				let delay=(opt.DelayMax<1)?0:
+					(opt.DelayMin+Math.random()*(opt.DelayMax-opt.DelayMin));
+				launch.Delay(delay,()=>callRecv(contents));
+			}
+		},
+
+		// friends 
+		_connectFromTransport:(name,tp)=>{
+
+			priv.trace(()=>'new Receiver connection named '+name+' for a Transport '+tp.GetCaption());
+
+			let rh=priv.h4t=recver.Fetch();
+			rh.Extend('ReceiverFromTransport',{
+				// private 
+			},{
+				// public 
+				GetConnectionName:()=>name,
+				GetTransport:()=>tp,
+			});
+			if(tp.IsOpen())rh.Open();
+
+			return rh;
+		},
+	});
+
+	const agent_SetTracing=recver.Inherit('SetTracing',(side)=>{
+		agent_SetTracing(side);
+		recver.SetTracing_Receiver(side);
+	});
+
+
 //	const onReceived=(recver,from,contents)=>{
 //
 //		let ep=recver._private_.ep[target];
 //		if(!ep){
-//			log.Notice('Receiver ('+recver.Name+') not have an EndPoint for received for '+target,contents);
+//			log.Notice('Receiver ('+recver.GetCaption()+') not have an EndPoint for received for '+target,contents);
 //			return;
 //		}
 //
@@ -436,20 +204,9 @@ function _receiver_new(opt={}){
 //
 //	}
 
-	const callRecv=(from,contents)=>{
-		priv.tp.agent._private_.tp.recv(from,contents);
-
-		if(dub_ratio<=0)return;
-		if(Math.random()>=dub_ratio)return;
-
-		let delay=(dub_interval_max<1)?0:
-			(dub_interval_min+Math.random()*(dub_interval_max-dub_interval_min));
-		launch.Delay(delay,()=>callRecv(from,contents));
-	}
-
 //	recver.Attach=(name,ep)=>{
 //		if(recver._private_.ep[name]){
-//			log.Warn('Receiver ('+recver.Name+') received from '+from+' for '+target,contents);
+//			log.Warn('Receiver ('+recver.GetCaption()+') received from '+from+' for '+target,contents);
 //		}
 //
 //		recver._private_.ep[name]=ep.GetAgent();
@@ -460,259 +217,175 @@ function _receiver_new(opt={}){
 //		delete recver._private_.ep[name];
 //	}
 
-	recver.Receive=(from,packed)=>{
-
-		if(!priv.tp){
-			log.Tick('Receiver ('+recver.Name+') not attached to a Transport, abandon it',packed);
-			return;
-		}
-		if(!recver.IsReady()){
-			log.Tick('Receiver ('+recver.Name+') received out of the service, abandon it',packed);
-			return;
-		}
-
-		packed=onGate(recver,from,packed);
-		if(!packed){
-			log.Tick('Receiver ('+recver.Name+') received invalid from '+from,packed);
-			return;
-		}
-
-		let contents=onDecode(recver,from,packed);
-		if(!contents){
-			log.Tick('Receiver ('+recver.Name+') received broken from '+from,packed);
-			return;
-		}
-
-		log.Tick('Receiver ('+recver.Name+') received from '+from,contents);
-
-		if(delay_max<1){
-			callRecv(from,contents);
-		}
-		else{
-			let delay=(delay_max<1)?0:
-				(delay_min+Math.random()*(delay_max-delay_min));
-			launch.Delay(delay,()=>callRecv(from,contents));
-		}
-
-//		if(delay_max<1){
-//			priv.tp.agent._private_.tp.recv(from,contents);
-//		}
-//		else{
-//			let delay=(delay_max<1)?0:
-//				(delay_min+Math.random()*(delay_max-delay_min));
-//			launch.Delay(delay,()=>onReceived(recver,from,target,contents));
-//		}
-//		if(dubbing>0 && Math.random()<dubbing){
-//
-//			log.Tick('Receiver ('+recver.Name+') dub test from '+from+' for '+target,contents);
-//
-//			let delay=(delay_max<1)?0:
-//				(delay_min+Math.random()*(delay_max-delay_min));
-//			launch.Delay(delay,()=>onReceived(recver,from,target,contents));
-//		}
-//
-//////		let remote_epid_from=onExtractSenderEPID(tp,data);
-////		let ep_to=tp.GetEndPoint(local_epid_to);
-////
-////		if(!ep_to){
-////			tp.GetLogger().Notice(()=>((local_epid_to==null)?'Host':('EndPoint '+local_epid_to))+' not found in Transport '+tp.Name);
-////			return;
-////		}
-////
-////		try{
-////			let pla=onExtractPayloadArray(data);
-////			if(!Array.isArray(pla)){
-////				tp.GetLogger().Notice(()=>'No payloads: ',data);
-////			}
-////			else for(let pl of pla){
-////
-////				let sid=onExtractSessionID(pl);
-////				if(sid){
-////					// receive for a session 
-////					let sess=tp._private_.session[sid];
-////					if(!sess){
-////						tp.GetLogger().Notice(()=>'Unknown session: '+sid);
-////					}
-////					else{
-////						let plt=onExtractPayloadType(pl);
-////						sess.GetAgent()._private_.receive(ep_to,local_epid_from,plt,pl);
-////					}
-////				}
-////				else if(!plrs){
-////					// receive plain payload 
-////					ep_to._private_.receive(local_epid_from,pl);
-////				}
-////				else{
-////					// receive by payload type 	
-////					let plt=onExtractPayloadType(pl);
-////					let pls=(plt==null)?null:plss[plt];
-////					let plr=(plt==null)?null:plrs[plt];
-////					if(!plr){
-////						tp.GetLogger().Notice(()=>'Receiver not defined: '+plt);
-////					}
-////					else if(!pls?.QuickCall){
-////						// call queue 
-////						tp.GetLogger().Tick(()=>'Payload queued '+local_epid_from+' => '+local_epid_to,pl);
-////						ep_to._private_.recvq.push({
-////							From:local_epid_from,
-////							Payload:pl,
-////							Spec:pls,
-////							Call:()=>{
-////								pls._private_.OnReceived(ep_to,local_epid_from);
-////								plr(ep_to,local_epid_from,pl);
-////							},
-////						});
-////					}
-////					else{
-////						// call now 
-////						pls._private_.OnReceived(ep_to,local_epid_from);
-////						plr(ep_to,local_epid_from,pl);
-////					}
-////				}
-////			}
-////		}
-////		catch(e){
-////			tp.GetLogger().Fatal('Transport error at unpack: '+e.toString(),YgEs.FromError(e));
-////		}
-	}
-
 	return recver;
 }
 
 function _sender_new(opt={}){
 
-	let log=opt.Log??Log;
+	opt=YgEs.Validate(opt,{Others:true,Struct:{
+		Name:{Literal:true,Default:'YgEs.Sender'},
+		Trace_Sender:{Boolable:true},
+		Log:{Class:'YgEs.LocalLog',Default:Log},
+		AgentBypasses:{List:{Literal:true}},
+		Unorderable:{Boolable:true,Default:false},
+		DelayMin:{Integer:true,Default:0},
+		DelayMax:{Integer:true,Default:0},
+		DubRatio:{Numeric:true,Default:0.0},
+		DubIntervalMin:{Integer:true,Default:0},
+		DubIntervalMax:{Integer:true,Default:0},
+		OnEncode:{Callable:true,Default:(sender,contents)=>{
+			return JSON.stringify(contents);
+		}},
+		OnSend:{Callable:true,Default:(sender,packed)=>{
+			log.Fatal('OnSend is not impremented in Sender',packed);
+		}},
+	}},'opt');
 
-	let unorderable=opt.Unorderable??false;
-	let delay_min=opt.DelayMin??0;
-	let delay_max=opt.DelayMax??0;
-	let dub_ratio=opt.DubRatio??0;
-	let dub_interval_min=opt.DubIntervalMin??0;
-	let dub_interval_max=opt.DubIntervalMax??0;
+	let log=opt.Log;
 
-	let prm=YgEs.Customize(opt,{
-		Name:'YgEs.Sender',
-		Log:{Class:'YgEs.Logger'},
-		Launcher:{Class:'YgEs.Laungher'},
-		HappenTo:{Class:'YgEs.HappeningManager'},
-		Dependencies:{List:true,Init:[],Class:'YgEs.Agent'},
-		TraceAgent:{Mono:true,Init:null},
-		TraceStMac:{Mono:true,Init:null},
-		TraceProc:{Mono:true,Init:null},
-	},log);
-
-	prm.AgentBypasses=['Send']
-
-	const onOpen=opt.OnOpen??((agent)=>{});
-	prm.OnOpen=(agent)=>{
-		onOpen(agent);
-	}
+	opt.AgentBypasses.push('Send');
 
 	const onClose=opt.OnClose??((agent)=>{});
-	prm.OnClose=(agent)=>{
+	opt.OnClose=(agent)=>{
+
 		onClose(agent);
 	}
 
-	const onReady=opt.OnReady??((agent)=>{});
-	prm.OnReady=(agent)=>{
-		onReady(agent);
-	}
-
-	const onEncode=opt.OnEncode??((sender,contents)=>{
-		return JSON.stringify(contents);
-	});
-
-	const onSend=opt.OnSend??((sender,packed)=>{
-		log.Fatal('OnSend is not impremented in Sender',packed);
-	});
-
-	let priv={
-	}
-
-	let sender=Agent.StandBy(prm);
-	sender._private_.sender=priv;
-
-	const launch=sender.GetLauncher().CreateLauncher({Limit:unorderable?-1:1});
-
 	const checkReady=()=>{
 		if(!sender.IsReady()){
-			log.Fatal('Sender ('+sender.Name+') is not ready');
+			log.Fatal('Sender ('+sender.GetCaption()+') is not ready');
 			return false;
 		}
 		return true;
 	}
 
 	const callSend=(packed)=>{
-		onSend(sender,packed);
-		if(dub_ratio<=0)return;
-		if(Math.random()>=dub_ratio)return;
 
-		let delay=(dub_interval_max<1)?0:
-			(dub_interval_min+Math.random()*(dub_interval_max-dub_interval_min));
+		priv.trace(()=>'sending from Sender ('+sender.GetCaption()+')');
+
+		opt.OnSend(sender,packed);
+		if(opt.DubRatio<=0)return;
+		if(Math.random()>=opt.DubRatio)return;
+
+		priv.trace(()=>'dubs sending on Sender ('+sender.GetCaption()+')');
+
+		let delay=(opt.DubIntervalMax<1)?0:
+			(opt.DubIntervalMin+Math.random()*(opt.DubIntervalMax-opt.DubIntervalMin));
 		launch.Delay(delay,()=>callSend(packed));
 	}
 
-	sender.Send=(contents)=>{
-		if(!checkReady())return;
+	let sender=Agent.StandBy(opt);
+	let launch=sender.GetLauncher().CreateLauncher({Limit:opt.Unorderable?-1:1});
+	let priv=sender.Extend('YsEs.Sender',{
+		// private 
+		tracing_sender:opt.Trace||opt.Trace_Sender,
 
-		let packed=onEncode(sender,contents);
+		// caution: 
+		// Sender not recognize connecting Transport 
+		// and can connect from many Transport 
 
-		if(delay_max<1){
-			callSend(packed);
-		}
-		else{
-			let delay=(delay_max<1)?0:
-				(delay_min+Math.random()*(delay_max-delay_min));
-			launch.Delay(delay,()=>callSend(packed));
-		}
-	}
+		trace:(msg)=>{
+			if(!priv.tracing_sender)return;
+			log.Trace(msg);
+		},
+	},{
+		// public 
+		SetTracing_Sender:(side)=>priv.tracing_sender=!!side,
+
+		Send:(contents)=>{
+			if(!checkReady())return;
+
+			let packed=opt.OnEncode(sender,contents);
+
+			if(opt.DelayMax<1){
+				callSend(packed);
+			}
+			else{
+				let delay=(opt.DelayMax<1)?0:
+					(opt.DelayMin+Math.random()*(opt.DelayMax-opt.DelayMin));
+				launch.Delay(delay,()=>callSend(packed));
+			}
+		},
+
+		// friends 
+		_connectFromTransport:(name,tp)=>{
+
+			priv.trace(()=>'new Sender connection named '+name+' for a Transport '+tp.GetCaption());
+
+			let sh=sender.Fetch();
+			sh.Extend('SenderFromTransport',{
+				// private 
+			},{
+				// public 
+				GetConnectionName:()=>name,
+				GetTransport:()=>tp,
+			});
+			if(tp.IsOpen())sh.Open();
+
+			return sh;
+		},
+
+	});
+
+	const agent_SetTracing=sender.Inherit('SetTracing',(side)=>{
+		agent_SetTracing(side);
+		sender.SetTracing_Sender(side);
+	});
 
 	return sender;
 }
 
 function _loopback_new(receiver,opt={}){
 
-	let log=opt.Log??Log;
-	let name=opt.Name??'YgEs.Sender.Loopback';
-	let prm=YgEs.Customize(opt,{
-		Name:name,
-		Log:{Class:'YgEs.Logger'},
-		Launcher:{Class:'YgEs.Laungher'},
-		HappenTo:{Class:'YgEs.HappeningManager'},
-		Dependencies:{List:true,Init:[],Class:'YgEs.Agent'},
-	},log);
+	opt=YgEs.Validate(opt,{Others:true,Struct:{
+		Name:{Literal:true,Default:'YgEs.Sender.Loopback'},
+		Log:{Class:'YgEs.LocalLog',Default:Log},
+		Dependencies:{List:{Class:'YgEs.Handle'}},
+	}},'opt');
 
-	prm.OnSend=(sender,packed)=>{
+	let log=opt.Log;
+
+	opt.OnSend=(sender,packed)=>{
 		if(!receiver)return;
-		receiver.Receive('Loopback',packed);
+		receiver.Receive(packed);
 	}
 
 	if(!receiver){
 		log.Fatal('receiver not defined for '+name);
 	}
-	else prm.Dependencies.push(receiver);
+	else opt.Dependencies.push(receiver.Fetch());
 
-	let sender=_sender_new(prm);
+	let sender=_sender_new(opt);
+	sender.Extend('YgEs.Sender.Loopback',{
+		// private 
+	},{
+		// public 
+	});
 
 	return sender;
 }
 
 function _terminate_new(opt={}){
 
-	let log=opt.Log??Log;
-	let prm=YgEs.Customize(opt,{
-		Name:'YgEs.Sender.Terminate',
-		Log:{Class:'YgEs.Logger'},
-		Launcher:{Class:'YgEs.Laungher'},
-		HappenTo:{Class:'YgEs.HappeningManager'},
-		Dependencies:{List:true,Init:[],Class:'YgEs.Agent'},
-	},log);
+	opt=YgEs.Validate(opt,{Others:true,Struct:{
+		Name:{Literal:true,Default:'YgEs.Sender.Terminate'},
+		Log:{Class:'YgEs.LocalLog',Default:Log},
+	}},'opt');
 
-	prm.OnSend=(sender,packed)=>{
+	let log=opt.Log;
+
+	opt.OnSend=(sender,packed)=>{
 		log.Tick('Sending terminated',packed);
 	}
 
-	return _sender_new(prm);
+	let sender=_sender_new(opt);
+	sender.Extend('YgEs.Sender.Terminate',{
+		// private 
+	},{
+		// public 
+	});
+
+	return sender;
 }
 
 function _tpctrl_new(){
@@ -742,31 +415,34 @@ function _tpctrlset_new(){
 
 function _transport_new(opt={}){
 
-	let log=opt.Log??Log;
-	let prm=YgEs.Customize(opt,{
-		Name:'YgEs.Transport',
-		Log:{Class:'YgEs.Logger'},
-		Launcher:{Class:'YgEs.Laungher'},
-		HappenTo:{Class:'YgEs.HappeningManager'},
-		Dependencies:{List:true,Init:[],Class:'YgEs.Agent'},
-		TraceAgent:{Mono:true,Init:null},
-		TraceStMac:{Mono:true,Init:null},
-		TraceProc:{Mono:true,Init:null},
-	},log);
-	prm.PayloadSpecs=opt.PayloadSpecs??{}
-	prm.PayloadHooks=opt.PayloadHooks??{}
+	opt=YgEs.Validate(opt,{Others:true,Struct:{
+		Name:{Literal:true,Default:'YgEs.Transport'},
+		Trace_Transport:{Boolable:true},
+		Log:{Class:'YgEs.LocalLog',Default:Log},
+		AgentBypasses:{List:{Literal:true}},
+		PIDPrefix:{Literal:true},
+		PayloadSpecs:{Dict:{Struct:true}},
+		PayloadHooks:{Dict:{Struct:true}},
+		Unorderable:{Boolable:true,Default:false},
+		DelayMin:{Integer:true,Default:0},
+		DelayMax:{Integer:true,Default:0},
+		DubRatio:{Numeric:true,Default:0.0},
+		DubIntervalMin:{Integer:true,Default:0},
+		DubIntervalMax:{Integer:true,Default:0},
+	}},'opt');
+	let log=opt.Log;
 
-	prm.AgentBypasses=[
+	opt.AgentBypasses.push(
 		'GetPayloadSpecs',
 		'AttachReceiver','DetachReceiver',
-		'AttachSender','DetachReceiver',
-		'AttachSelector',
+		'AttachSender','DetachSender',
+		'SetSelector',
 		'GetEndPoint','Connect','Disconnect',
 		'NewProtocol','ExpireProtocol',
-	]
+	);
 
 	const onOpen=opt.OnOpen??((agent)=>{});
-	prm.OnOpen=(agent)=>{
+	opt.OnOpen=(agent)=>{
 		onOpen(agent);
 
 		// open attached 
@@ -776,10 +452,22 @@ function _transport_new(opt={}){
 		for(let k in priv.sender){
 			priv.sender[k].Open();
 		}
+		// endpoints not open, should control by userside 
+		// Transport opened by an EndPoint automatically 
+
+		// wait for senders ready 
+		agent.WaitFor('Senders',()=>{
+			for(let k in priv.sender){
+				if(!priv.sender[k].IsReady())return false;
+			}
+			return true;
+		});
+
+		// receivers and endpoints not required ready 
 	}
 
 	const onClose=opt.OnClose??((agent)=>{});
-	prm.OnClose=(agent)=>{
+	opt.OnClose=(agent)=>{
 		onClose(agent);
 
 		// close attached 
@@ -791,12 +479,18 @@ function _transport_new(opt={}){
 		}
 	}
 
-	const onReady=opt.OnReady??((agent)=>{});
-	prm.OnReady=(agent)=>{
-		onReady(agent);
+	const checkReady=()=>{
+		if(!tp.IsReady()){
+			log.Fatal('Transport ('+tp.GetCaption()+') is not ready');
+			return false;
+		}
+		return true;
 	}
 
-	let priv={
+	let tp=Agent.StandBy(opt);
+	const priv=tp.Extend('YgEs.Transport',{
+		// private 
+
 		// control set 
 		cset:_tpctrlset_new(),
 		// attached Receiver 
@@ -810,73 +504,204 @@ function _transport_new(opt={}){
 		// selector 
 		selector:null,
 
-		launch:(pid,from,target,type,body)=>{
+		tracing_transport:opt.Trace||opt.Trace_Transport,
+
+		trace:(msg)=>{
+			if(!priv.tracing_transport)return;
+			log.Trace(msg);
+		},
+	},{
+		// public 
+		SetTracing_Transport:(side)=>priv.tracing_transport=!!side,
+
+		GetPayloadSpecs:()=>opt.PayloadSpecs,
+
+		AttachReceiver:(name,recver)=>{
+
+			priv.trace(()=>'Receiver ('+recver.GetCaption()+') attaching as '+name+' on Transport ('+tp.Name+')');
+
+			if(priv.recver[name]){
+				log.Warn('Receiver['+name+'] already exists, replace it');
+				tp.DetachReceiver(name);
+			}
+
+			recver=recver.GetAgent();
+			if(recver.IsConnected()){
+				log.Warn('Receiver ('+recver.GetCaption()+') already connected, cut off it');
+				recver.GetTransport().DetachReceiver(recver.GetConnectionName());
+			}
+
+			priv.recver[name]=recver._connectFromTransport(name,tp);
+		},
+
+		DetachReceiver:(name)=>{
+			let rh=priv.recver[name];
+			if(!rh)return;
+			delete priv.recver[name];
+
+			priv.trace(()=>'Receiver ('+rh.GetReceiver().GetCaption()+') detaching from Transport ('+tp.GetCaption()+')');
+
+			rh.GetReceiver().CutOff();
+		},
+
+		AttachSender:(name,sender)=>{
+
+			priv.trace(()=>'Sender ('+sender.GetCaption()+') attaching as '+name+' on Transport ('+tp.GetCaption()+')');
+
+			if(priv.sender[name]){
+				log.Warn('Sender['+name+'] already exists, replace it');
+				tp.DetachSender(name);
+			}
+
+			sender=sender.GetAgent();
+
+			priv.sender[name]=sender._connectFromTransport(name,tp);
+		},
+
+		DetachSender:(name)=>{
+			let sh=priv.sender[name];
+			if(!sh)return;
+			delete priv.sender[name];
+
+			priv.trace(()=>'Sender ('+sh.GetSender().GetCaption()+') detaching from Transport ('+tp.GetCaption()+')');
+		},
+
+		SetSelector:(cb_sel)=>{
+			priv.selector=cb_sel;
+		},
+
+		GetEndPoint:(name)=>priv.ep[name],
+
+		Connect:(name,ep)=>{
+
+			priv.trace(()=>'EndPoint ('+ep.GetCaption()+') connecting as '+name+' on Transport ('+tp.GetCaption()+')');
+
+			if(priv.ep[name]){
+				log.Warn('EndPoint['+name+'] already exists, replace it');
+				tp.Disconnect(name);
+			}
+
+			ep=ep.GetAgent();
+			if(ep.IsConnected()){
+				log.Warn('EndPoint ('+ep.GetCaption()+') already connected, cut off it');
+				ep.GetTransport().Disconnect(eh.GetConnectionName());
+			}
+
+			priv.ep[name]=ep._connectFromTransport(name,tp);
+		},
+
+		Disconnect:(name)=>{
+			let eh=priv.ep[name];
+			if(!eh)return;
+			delete priv.ep[name];
+
+			priv.trace(()=>'EndPoint ('+eh.GetEndPoint().GetCaption()+') detaching from Transport ('+tp.GetCaption()+')');
+		},
+
+		NewProtocol:(epn,opt2={})=>{
+
+			if(!priv.ep[epn]){
+				log.Fatal('EndPoint('+epn+') not found in this Transport ('+tp.GetCaption()+')');
+				return null;
+			}
+
+			let pid=opt2.PID;
+			if(pid==undefined){
+				do{
+					pid=''+opt.PIDPrefix+YgEs.NextID();
+				}while(priv.prot[pid]);
+			}
+
+			let prot=_protocol_new(tp,epn,pid,opt2);
+			priv.prot[pid]=prot;
+			return prot;
+		},
+
+		ExpireProtocol:(pid)=>{
+			if(!priv.prot[pid])return;
+			delete priv.prot[pid];
+		},
+
+		// friends 
+		_launch:(pid,from,target,type,body,prop)=>{
 			if(!checkReady())return;
 
 			if(!priv.selector){
-				log.Fatal(()=>'Transport ('+tp.Name+') has no selector to send',sq);
+				log.Fatal(()=>'Transport ('+tp.GetCaption()+') has no selector to send');
 				return;
 			}
 
 			let sn=priv.selector(tp,target);
 			if(!sn){
-				log.Fatal(()=>'Transport ('+tp.Name+') has no sender to send to '+target,sq);
+				log.Fatal(()=>'Transport ('+tp.GetCaption()+') has no sender to send to '+target);
 				return;
 			}
 
 			let cset=priv.cset.Ref(sn);
+			let content={PID:pid,From:from,To:target,Type:type,Body:body}
 
-			let content={PID:pid,From:from,Type:type,Body:body}
-
-			log.Tick(()=>'Transport ('+tp.Name+') launch to '+target,content);
+			priv.trace(()=>'Transport ('+tp.GetCaption()+') launch on sender named '+sn+' to '+target,content);
 
 			// queue this payload until kick() called 
 			cset.SendQ.push(content);
 		},
-		kick:(target)=>{
+		_kick:(target)=>{
 			if(!checkReady())return;
 
 			if(!priv.selector){
-				log.Fatal(()=>'Transport ('+tp.Name+') has no selector to send',sq);
+				log.Fatal(()=>'Transport ('+tp.GetCaption()+') has no selector to send');
 				return;
 			}
 
 			let sn=priv.selector(tp,target);
 			if(!sn){
-				log.Fatal(()=>'Transport ('+tp.Name+') has no sender to send to '+target,sq);
+				log.Fatal(()=>'Transport ('+tp.GetCaption()+') has no sender to send to '+target);
 				return;
 			}
 
 			let sender=priv.sender[sn];
 			if(!sender){
-				log.Fatal(()=>'Transport ('+tp.Name+') not recognized sender named '+sn,sq);
+				log.Fatal(()=>'Transport ('+tp.GetCaption()+') not recognized sender named '+sn);
 				return;
 			}
 
 			// SendQ required 
-			let cset=priv.cset.Get(sn);
-			if(!cset)return;
+			let cs=priv.cset.Get(sn);
+			if(!cs)return;
+
+			priv.trace(()=>'Transport ('+tp.GetCaption()+') kick a queue to sender named '+sn,cs.SendQ);
 
 			// flush SendQ 
-			let sq=cset.SendQ;
+			let sq=cs.SendQ;
 			if(sq.length<1)return;
-			cset.SendQ=[]
+			cs.SendQ=[]
 	
 			sender.Send(sq);
 		},
-		kickAll:()=>{
+		_kickAll:()=>{
 			if(!checkReady())return;
-			priv.cset.Each((target,obj)=>{priv.kick(target);});
+
+			for(let sn in priv.sender){
+				let sender=priv.sender[sn];
+				let cs=priv.cset.Get(sn);
+				if(!cs)continue;
+
+				// flush SendQ 
+				let sq=cs.SendQ;
+				if(sq.length<1)return;
+				cs.SendQ=[]
+				sender.Send(sq);
+			}
 		},
-		recv:(from,contents)=>{
+		_recv:(contents)=>{
 			if(!tp.IsReady()){
-				log.Tick('Transport ('+tp.Name+') received out of the service, abandon it',contents);
+				priv.trace('Transport ('+tp.GetCaption()+') received out of the service, abandon it');
 				return;
 			}
 
 			for(let pl of contents){
 				let plt=pl.Type;
-				let pls=prm.PayloadSpecs[plt];
+				let pls=opt.PayloadSpecs[plt];
 				if(!pls){
 					log.Notice(()=>'undefined payload type: '+plt);
 					continue;
@@ -885,7 +710,7 @@ function _transport_new(opt={}){
 				let pid=pl.PID;
 				if(!pid){
 					// request from a guest 
-					let cb=prm.PayloadHooks[plt]?.OnRequest;
+					let cb=opt.PayloadHooks[plt]?.OnRequest;
 					if(!cb){
 						log.Notice(()=>'no hooks OnRequest of payload type: '+plt);
 					}
@@ -898,19 +723,19 @@ function _transport_new(opt={}){
 					let prot=priv.prot[pid];
 					if(!prot){
 						// handshaking 
-						cb=prm.PayloadHooks[plt]?.OnHanding;
+						cb=opt.PayloadHooks[plt]?.OnHanding;
 						if(!cb){
 							log.Notice(()=>'no hooks OnHanding of payload type: '+plt,pl);
 						}
 						else{
 							let epn=cb(tp,pl);
 							if(epn==null){
-								log.Tick(()=>'no handing EndPoint',pl);
+								priv.trace(()=>'no handing EndPoint');
 							}
 							else{
-								prot=tp.NewProtocol(epn,pid);
+								prot=tp.NewProtocol(epn,{PID:pid});
 								if(prot){
-									log.Tick(()=>'handing accepted by EndPoint ('+epn+')',pl);
+									priv.trace(()=>'handing accepted by EndPoint ('+epn+')');
 								}
 							}
 						}
@@ -924,207 +749,53 @@ function _transport_new(opt={}){
 					}
 
 					// receivements 
-					cb=prm.PayloadHooks[plt]?.OnReplied;
+					cb=opt.PayloadHooks[plt]?.OnReplied;
 					if(cb && !cb(tp,prot,pl)){
-						log.Tick(()=>'end of Protocol ('+pid+')',pl);
+						priv.trace(()=>'end of Protocol ('+pid+')');
 						tp.ExpireProtocol(pid);
 					}
 				}
 			}
 		},
-	}
+	});
 
-	let tp=Agent.StandBy(prm);
-	tp._private_.tp=priv;
-
-	const checkReady=()=>{
-		if(!tp.IsReady()){
-			log.Fatal('Transport ('+tp.Name+') is not ready');
-			return false;
-		}
-		return true;
-	}
-
-	tp.GetPayloadSpecs=()=>prm.PayloadSpecs;
-
-	tp.AttachReceiver=(name,recver)=>{
-
-		log.Trace(()=>'Receiver ('+recver.Name+') attaching as '+name+' on Transport ('+tp.Name+')');
-
-		if(recver._private_.recv.tp){
-			log.Warn('Receiver ('+recver.Name+') already connected, cut off it');
-			recver._private_.recv.tp.agent.DetachReceiver(recver._private_.recv.tp.name);
-		}
-		if(priv.recver[name]){
-			log.Warn('Receiver['+name+'] already exists, replace it');
-			tp.DetachReceiver(name);
-		}
-
-		priv.recver[name]=tp.IsOpen()?recver.Open():recver.Fetch();
-		recver._private_.recv.tp={
-			name:name,
-			agent:tp,
-		}
-	}
-	tp.DetachReceiver=(name)=>{
-		let recver=priv.recver[name];
-		if(!recver)return;
-
-		if(!recver._private_.recv.tp){
-			log.Warn(()=>'Receiver ('+recver.Name+') already detached');
-		}
-		else if(name!=recver._private_.recv.tp.name){
-			log.Warn(()=>'Receiver ('+recver.Name+') attached as other name ('+recver._private_.recv.tp.name+' => '+name+')');
-		}
-		else if(tp!=recver._private_.recv.tp.agent){
-			log.Warn(()=>'Receiver ('+recver.Name+') attached to other Transport ('+tp.Name+' => '+recver._private_.recv.tp.agent.Name+')');
-		}
-
-		recver._private_.recv.tp=null;
-
-		log.Trace(()=>'Receiver ('+recver.Name+') detaching from Transport ('+tp.Name+')');
-
-		recver.Close();
-		delete priv.recver[name];
-	}
-
-	tp.AttachSender=(name,sender)=>{
-
-		log.Trace(()=>'Sender ('+sender.Name+') attaching as '+name+' on Transport ('+tp.Name+')');
-
-		if(priv.sender[name]){
-			log.Warn('Sender['+name+'] already exists, replace it');
-			tp.DetachSender(name);
-		}
-		priv.sender[name]=
-			tp.IsOpen()?sender.Open():sender.Fetch();
-	}
-	tp.DetachSender=(name)=>{
-		let sender=priv.sender[name];
-		if(!sender)return;
-
-		log.Trace(()=>'Sender ('+sender.Name+') detaching from Transport ('+tp.Name+')');
-
-		sender.Close();
-		delete priv.sender[name];
-	}
-
-	tp.AttachSelector=(cb_sel)=>{
-		priv.selector=cb_sel;
-	}
-
-	tp.GetEndPoint=(name)=>priv.ep[name];
-	tp.Connect=(name,ep)=>{
-
-		log.Trace(()=>'EndPoint('+ep.Name+') connecting as '+name+' on Transport ('+tp.Name+')');
-
-		if(priv.ep[name]){
-			log.Warn('EndPoint['+name+'] already exists, replace it');
-			tp.Disconnect(name);
-		}
-
-		ep=ep.GetAgent();
-		let ep_priv=ep._private_.ep;
-
-		if(ep_priv.tp){
-			log.Warn('EndPoint['+name+'] already connected, reconnect it');
-			ep_priv.tp.handle.Disconnect(ep_priv.tp.name);
-		}
-
-		priv.ep[name]=ep;
-		ep_priv.tp={
-			name:name,
-			handle:ep.IsOpen()?tp.Open():tp.Fetch(),
-		}
-	}
-	tp.Disconnect=(name)=>{
-		let ep=priv.ep[name];
-		if(!ep)return;
-
-		ep=ep.GetAgent();
-		let ep_priv=ep._private_.ep;
-
-		if(!ep_priv.tp){
-			// already disconnected 
-			log.Warn('EndPoint['+name+'] already disconnected');
-		}
-		else if(name!=ep_priv.tp.name){
-			log.Warn('EndPoint['+name+'] connected with other name');
-		}
-		else if(tp!=ep_priv.tp.handle.GetAgent()){
-			log.Warn('EndPoint['+name+'] connected to other instance');
-		}
-		else{
-			// disconnect now 
-
-			log.Trace(()=>'EndPoint('+ep.Name+') disconnected from Transport ('+tp.Name+')');
-			ep_priv.tp.handle.Close();
-		}
-
-		delete priv.ep[name];
-		ep_priv.tp=null;
-	}
-
-	tp.NewProtocol=(epn,pid=undefined)=>{
-		let ep=priv.ep[epn];
-		if(!ep){
-			log.Fatal('EndPoint('+epn+') not found in this Transport ('+tp.Name+')');
-			return null;
-		}
-
-
-		if(pid==undefined){
-			do{
-				pid=YgEs.NextID();
-			}while(priv.prot[pid]);
-		}
-
-		let prot=_protocol_new(pid,ep,log);
-		priv.prot[pid]=prot;
-
-		return prot;
-	}
-	tp.ExpireProtocol=(pid)=>{
-		if(!priv.prot[pid])return;
-		delete priv.prot[pid];
-	}
+	const agent_SetTracing=tp.Inherit('SetTracing',(side)=>{
+		agent_SetTracing(side);
+		tp.SetTracing_Transport(side);
+	});
 
 	return tp;
 }
 
-function _protocol_new(pid,ep,log){
+function _protocol_new(tp,epn,pid,opt={}){
 
-	let priv={
+	opt=YgEs.Validate(opt,{Others:true,Struct:{
+		Name:{Literal:true,Default:'YgEs.Protocol'},
+		Log:{Class:'YgEs.LocalLog',Default:tp.GetLogger()},
+		User:{Struct:true},
+	}},'opt');
+	let log=opt.Log;
+
+	let prot=YgEs.SoftClass(opt.Name,opt.User);
+	let priv=prot.Extend('YgEs.Protocol',{
+		// private 
 		pid:pid,
-		ep:ep,
+		tp:tp,
 		calling:{},
-	}
-
-	let prot={
-		Name:'YgEs.Protocol',
-		_private_:{prot:priv},
-
+	},{
+		// public 
 		GetPID:()=>pid,
-		GetEndPoint:()=>ep,
+		GetTransport:()=>tp,
 
 		Release:()=>{
-			let tp=ep.GetTransportInstance();
-			if(!tp)return null;
-			tp.ExpireProtocol(prot.GetPID());
+			tp.ExpireProtocol(pid);
 		},
 
-		Launch:(target,type,body)=>{
-			let tp=ep.GetTransportInstance();
-			if(!tp)return;
+		Launch:(target,type,body,prop=null)=>{
 
-			const plss=tp.GetPayloadSpecs();
-			if(!plss){
-				log.Fatal('PayloadSpecs not defined');
-				return;
-			}
-			let pls=plss[type];
+			let pls=tp.GetPayloadSpecs()[type];
 			if(!pls){
-				log.Fatal('PayloadSpec['+type+'] not defined');
+				log.Notice(()=>'undefined payload type: '+plt);
 				return;
 			}
 
@@ -1143,149 +814,75 @@ function _protocol_new(pid,ep,log){
 				cng.Timeout=(pls.CallOnce.Timeout)?(now+pls.CallOnce.Timeout):null;
 			}
 
-			ep.Launch(target,type,body,prot);
+			tp._launch(pid,epn,target,type,body,prop);
 		},
 		Kick:(target)=>{
-			ep.Kick(target);
+			tp._kick(target);
 		},
 		KickAll:()=>{
-			ep.KickAll();
+			tp._kickAll();
 		},
-		Send:(target,type,body)=>{
-			prot.Launch(target,type,body);
+		Send:(target,type,body,prop=null)=>{
+			prot.Launch(target,type,body,prop);
 			prot.Kick(target);
 		},
+
 		Unlock:(type)=>{
 			if(!priv.calling[type])return;
-			log.Tick(()=>'Protocol ('+pid+') unlock '+type);
+			log.Trace(()=>'Protocol ('+pid+') unlock '+type);
 			delete priv.calling[type];
 		},
-	}
+	});
 
 	return prot;
 }
 
-function _session_new(opt={}){
-
-//	let log=opt.Log??Log;
-//	let prm=YgEs.Customize(opt,{
-//		Name:'YgEs.Session',
-//		Log:{Class:'YgEs.Logger'},
-//		Launcher:{Class:'YgEs.Laungher'},
-//		HappenTo:{Class:'YgEs.HappeningManager'},
-//		Dependencies:{List:true,Init:[],Class:'YgEs.Agent'},
-//	},log);
-
-	let sess=Agent.StandBy(prm);
-//	sess._private_.host=null;
-//	sess._private_.members={}
-//
-	return sess;
-}
-
 function _endpoint_new(opt={}){
 
-	let log=opt.Log??Log;
+	opt=YgEs.Validate(opt,{Others:true,Struct:{
+		Name:{Literal:true,Default:'YgEs.EndPoint'},
+		Trace_EndPoint:{Boolable:true},
+		Log:{Class:'YgEs.LocalLog',Default:Log},
+		AgentBypasses:{List:{Literal:true}},
+		Unorderable:{Boolable:true,Default:false},
+		DelayMin:{Integer:true,Default:0},
+		DelayMax:{Integer:true,Default:0},
+		DubRatio:{Numeric:true,Default:0.0},
+		DubIntervalMin:{Integer:true,Default:0},
+		DubIntervalMax:{Integer:true,Default:0},
+	}},'opt');
 
-	let prm=YgEs.Customize(opt,{
-		Name:'YgEs.EndPoint',
-		Log:{Class:'YgEs.Logger'},
-		Launcher:{Class:'YgEs.Laungher'},
-		HappenTo:{Class:'YgEs.HappeningManager'},
-		Dependencies:{List:true,Init:[],Class:'YgEs.Agent'},
-		TraceAgent:{Mono:true,Init:null},
-		TraceStMac:{Mono:true,Init:null},
-		TraceProc:{Mono:true,Init:null},
-	},log);
+	let log=opt.Log;
 
-	prm.AgentBypasses=['GetTransportName','Launch','Kick','KickAll','Send','Unlock']
+	opt.AgentBypasses.push(
+		'SetTracing_EndPoint',
+		'IsConnected',
+		'GetTransportName','Launch','Kick','KickAll','Send'
+	);
 
 	const onOpen=opt.OnOpen??((agent)=>{});
-	prm.OnOpen=(agent)=>{
+	opt.OnOpen=(agent)=>{
+
 		onOpen(agent);
+
+		// wait for connected transport ready 
+		if(priv.tp)priv.tp.Open();
+		agent.WaitFor('Transport',()=>{
+			if(!priv.tp)return true;
+			return priv.tp.IsReady();
+		});
 	}
 
 	const onClose=opt.OnClose??((agent)=>{});
-	prm.OnClose=(agent)=>{
+	opt.OnClose=(agent)=>{
 
-		if(priv.tp){
-			priv.tp.handle.Disconnect(priv.tp.name);
-			priv.tp=null;
-		}
-
+		if(priv.tp)priv.tp.Close();
 		onClose(agent);
 	}
 
-	const onReady=opt.OnReady??((agent)=>{});
-	prm.OnReady=(agent)=>{
-		onReady(agent);
-	}
-
-	let priv={
-		// connected Transport 
-		tp:null,
-	}
-
-	let ep=Agent.StandBy(prm);
-	ep._private_.ep=priv;
-
-//	for(let type in plss){
-//		ep._private_.plss[type]={
-//			Unlock:[],
-//		}
-//	}
-//	for(let type in plss){
-//		let pls=plss[type];
-//		// unlock target types by received type 
-//		if(pls.CallOnce?.Reply)ep._private_.plss[pls.CallOnce.Reply].Unlock.push(type);
-//	}
-//
-//	ep._private_.Receive=(ep,from,type,body)=>{
-//		if(!checkReady())return;
-//		let cset=ep._private_.cset.Get(from);
-//
-//		log.Tick('EndPoint ('+ep.Name+') received from '+from);
-//
-//		if(!plss){
-//			// for no payload definitions 
-//			onReceived(ep,from,type,body);
-//			return;
-//		}
-//		let pls=plss[type];
-//		if(!pls){
-//			ep.GetLogger().Fatal(()=>'Undefined Payload: '+type,body);
-//			return;
-//		}
-//
-//		if(pls.CallOnce?.Limit && pls.CallOnce?.Reply!=null){
-//			let pls2=ep._private_.plss[pls.CallOnce.Reply];
-//			if(!pls2){
-//				tp.GetLogger().Warn('PayloadType '+pls.CallOnce.Reply+' not defined for unlock PayloadType '+type,body);
-//			}
-//			else{
-//				for(let t2 of pls2.Unlock){
-//					ep.Unlock(from,t2);
-//				}
-//			}
-//		}
-//
-////		pls_s._private_.OnReceived=(ep,ep_from)=>{
-////			for(let plt2 of pls_s._private_.UnlockTarget){
-////				ep.UnlockOnce(ep_from,plt2);
-////			}
-////		}
-//
-//		let plr=plrs[type];
-//		if(!plr){
-//			ep.GetLogger().Fatal(()=>'Undefined receiver func for Payload '+type,body);
-//			return;
-//		}
-//		plr(ep,from,type,body);
-//	}
-
 	const checkReady=()=>{
 		if(!ep.IsReady()){
-			log.Fatal('EndPoint ('+ep.Name+') is not ready');
+			log.Fatal('EndPoint ('+ep.GetCaption()+') is not ready');
 			return false;
 		}
 		return true;
@@ -1293,50 +890,90 @@ function _endpoint_new(opt={}){
 
 	const checkConnected=()=>{
 		if(!priv.tp){
-			log.Fatal('EndPoint ('+ep.Name+') is not connected to a Transport');
+			log.Fatal('EndPoint ('+ep.GetCaption()+') is not connected to a Transport');
 			return false;
 		}
 		return true;
 	}
 
-//	ep.GetInstanceID=()=>epid;
+	let ep=Agent.StandBy(opt);
 
-	ep.GetTransportName=()=>{
-		if(!priv.tp)return undefined;
-		return priv.tp.name;
-	}
-	ep.GetTransportInstance=()=>{
-		if(!priv.tp)return undefined;
-		return priv.tp.handle.GetAgent();
-	}
+	let priv=ep.Extend('YgEs.EndPoint',{
+		// private
+		tracing_endpoint:opt.Trace||opt.Trace_EndPoint,
 
-	ep.Launch=(target,type,body,prot=null)=>{
-		if(!checkConnected())return;
+		// connected Transport 
+		tp:null,
 
-		let tp=priv.tp.handle.GetAgent();
-		let tp_priv=tp._private_.tp;
-		let pid=prot?prot.GetPID():null;
-		let from=priv.tp?.name;
-		tp_priv.launch(pid,from,target,type,body);
-	}
-	ep.Kick=(target)=>{
-		if(!checkConnected())return;
+		trace:(msg)=>{
+			if(!priv.tracing_endpoint)return;
+			log.Trace(msg);
+		},
+	},{
+		// public
+		SetTracing_EndPoint:(side)=>priv.tracing_agent=!!side,
 
-		let tp=priv.tp.handle.GetAgent();
-		let tp_priv=tp._private_.tp;
-		tp_priv.kick(target);
-	}
-	ep.KickAll=(target)=>{
-		if(!checkConnected())return;
+		IsConnected:()=>!!priv.tp,
+		GetTransport:()=>{
+			if(!priv.tp)return undefined;
+			return priv.tp.GetAgent();
+		},
 
-		let tp=priv.tp.handle.GetAgent();
-		let tp_priv=tp._private_.tp;
-		tp_priv.kickAll(target);
-	}
-	ep.Send=(target,type,body,prot=null)=>{
-		ep.Launch(target,type,body,prot);
-		ep.Kick(target);
-	}
+		Launch:(target,type,body,prop=null)=>{
+			if(!checkConnected())return;
+
+			let tp=ep.GetTransport();
+			tp._launch(null,priv.tp.GetConnectionName(),target,type,body,prop);
+		},
+		Kick:(target)=>{
+			if(!checkConnected())return;
+
+			let tp=ep.GetTransport();
+			tp._kick(target);
+		},
+		KickAll:()=>{
+			if(!checkConnected())return;
+
+			let tp=ep.GetTransport();
+			tp._kickAll();
+		},
+		Send:(target,type,body,prop=null)=>{
+			ep.Launch(target,type,body,prop);
+			ep.Kick(target);
+		},
+
+		// friends 
+		_connectFromTransport:(name,tp)=>{
+
+			priv.trace(()=>'new EndPoint connection named '+name+' for a Transport '+tp.GetCaption());
+
+			let th=priv.tp=tp.Fetch();
+			th.Extend('TransportFromEndPoint',{
+				// private 
+			},{
+				// public 
+				GetConnectionName:()=>name,
+				GetEndPoint:()=>ep,
+			});
+
+			let eh=ep.Fetch();
+			eh.Extend('EndPointFromTransport',{
+				// private 
+			},{
+				// public 
+				GetConnectionName:()=>name,
+				GetTransport:()=>tp,
+			});
+			if(ep.IsOpen())th.Open();
+
+			return eh;
+		},
+	});
+
+	const agent_SetTracing=ep.Inherit('SetTracing',(side)=>{
+		agent_SetTracing(side);
+		ep.SetTracing_EndPoint(side);
+	});
 
 	return ep;
 }
@@ -1349,7 +986,6 @@ let Network=YgEs.Network={
 	CreateSender:_sender_new,
 	CreateReceiver:_receiver_new,
 	CreateTransport:_transport_new,
-	CreateSession:_session_new,
 	CreateEndPoint:_endpoint_new,
 
 	CreateLoopback:_loopback_new,
