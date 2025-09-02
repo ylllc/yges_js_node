@@ -25,7 +25,7 @@ let hap_local=HappeningManager.CreateLocal({
 
 // payload definition 
 const pld_specs={
-	STATE_REQ:{
+	HELLO:{
 		CallOnce:{
 			// only 1 call until replied 
 			Limit:true,
@@ -33,8 +33,8 @@ const pld_specs={
 //			Timeout:1,
 		},
 	},
-	STATE_REP:{
-		UnlockOnce:['STATE_REQ'],
+	HI:{
+		UnlockOnce:['HELLO'],
 	},
 }
 
@@ -56,9 +56,9 @@ const recvopt={
 //	DubIntervalMin:0,
 //	DubIntervalMax:500,
 	// (for tough test) maybe cutoff during receiving 
-	OnGate:(recver,packed)=>{
-//		if(Math.random()<0.25)return packed.substring(0,Math.random()*packed.length);
-		return packed;
+	OnGate:(recver,rawdata,prop)=>{
+//		if(Math.random()<0.25)return rawdata.substring(0,Math.random()*rawdata.length);
+		return rawdata;
 	},
 }
 
@@ -106,20 +106,20 @@ const tpopt={
 
 let tp_host=Network.CreateTransport(Object.assign(tpopt,{
 	PayloadHooks:{
-		STATE_REQ:{
-			OnHanding:(tp,payload)=>{
+		HELLO:{
+			OnBound:(tp,payload,prop)=>{
 
 				log_local.Info('Protocol accepted',payload);
 
 				// specify handing EndPoint 
 				return 'host';
 			},
-			OnReplied:(tp,prot,payload)=>{
+			OnRespond:(tp,prot,payload,prop)=>{
 
 				log_local.Info('Replied on Protocol '+prot.GetPID(),payload);
 
 				// reply the state 
-				prot.Send(payload.From,'STATE_REP','OK');
+				prot.Send(payload.From,'HI','OK');
 
 				// this Protocol is over 
 				return false;
@@ -129,14 +129,14 @@ let tp_host=Network.CreateTransport(Object.assign(tpopt,{
 }));
 tp_host.AttachReceiver('port_host',recv_host);
 tp_host.AttachSender('port_host',send_host);
-tp_host.SetSelector((tp,to)=>'port_host');
+tp_host.SetSelector((tp,target,prop)=>'port_host');
 tp_host.SetTracing_Transport(false);
 tp_host.SetTracing_Agent(false);
 
 let tp_guest=Network.CreateTransport(Object.assign(tpopt,{
 	PayloadHooks:{
-		STATE_REP:{
-			OnReplied:(tp,prot,payload)=>{
+		HI:{
+			OnRespond:(tp,prot,payload,prop)=>{
 
 				log_local.Info('Replied on Protocol '+prot.GetPID(),payload);
 
@@ -148,7 +148,7 @@ let tp_guest=Network.CreateTransport(Object.assign(tpopt,{
 }));
 tp_guest.AttachReceiver('port_guest',recv_guest);
 tp_guest.AttachSender('port_guest',send_guest);
-tp_guest.SetSelector((tp,to)=>'port_guest');
+tp_guest.SetSelector((tp,target,prop)=>'port_guest');
 tp_guest.SetTracing_Transport(false);
 tp_guest.SetTracing_Agent(false);
 
@@ -183,16 +183,16 @@ tp_guest.Connect('guest2',ep_guest2);
 	let prot2=tp_guest.NewProtocol('guest2',{Name:'ProtocolTest2'});
 
 	// request to the host 
-	prot1.Send(null,'STATE_REQ');
+	prot1.Send(null,'HELLO');
 	// 2nd request will blocked by CallOnce option 
-	prot1.Send(null,'STATE_REQ');
+	prot1.Send(null,'HELLO');
 	// can request from an other Protocol 
-	prot2.Send(null,'STATE_REQ');
+	prot2.Send(null,'HELLO');
 
 	await Timing.DelayKit(2000).ToPromise();
 
-	// can 2nd request after STATE_REP replied 
-	prot1.Send(null,'STATE_REQ');
+	// can 2nd request after HI replied 
+	prot1.Send(null,'HELLO');
 
 	await Timing.DelayKit(2000).ToPromise();
 

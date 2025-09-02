@@ -22,11 +22,6 @@ let hap_local=HappeningManager.CreateLocal({
 	OnHappen:(hm,hap)=>{log_local.Fatal(hap.GetProp());},
 });
 
-// payload definition 
-const pld_specs={
-	Hello:{},
-}
-
 // receiver setting
 const recvopt={
 	Log:log_local,
@@ -45,9 +40,9 @@ const recvopt={
 //	DubIntervalMin:0,
 //	DubIntervalMax:500,
 	// (for tough test) maybe cutoff during receiving 
-	OnGate:(recver,packed)=>{
-//		if(Math.random()<0.25)return packed.substring(0,Math.random()*packed.length);
-		return packed;
+	OnGate:(recver,rawdata,prop)=>{
+//		if(Math.random()<0.25)return rawdata.substring(0,Math.random()*rawdata.length);
+		return rawdata;
 	},
 }
 
@@ -66,42 +61,24 @@ const sendopt={
 	DelayMax:400,
 	// (for tough test) maybe break ordering by delay 
 	Unorderable:false,
-	// (for tough test) ratio of short packet on sending 
-	Hurting:0.0,
 }
 
 // loopback sender 
 let loopback=Network.CreateLoopback(recv,sendopt);
 // terminate sender 
-let term=Network.CreateTerminator(sendopt);
+let terminal=Network.CreateTerminator(sendopt);
 
 loopback.SetTracing_Sender(false);
-term.SetTracing_Sender(false);
+terminal.SetTracing_Sender(false);
 
 // transport setting
 const tpopt={
 	Log:log_local,
 	Launcher:launcher,
 	HappenTo:hap_local,
-	TraceAgent:false,
-	TraceStMac:false,
-	TraceProc:false,
-	PayloadSpecs:pld_specs,
-	PayloadHooks:{
-		Hello:{
-			OnRequest:(tp,payload)=>{
-
-				// target EndPoint 
-				let ep=tp.GetEndPoint(payload.To);
-				if(!ep){
-					log_local.Fatal('Transport ('+tp.Name+') does not have an EndPoint named '+target,payload);
-				}
-				else{
-					ep.GetAgent().User.OnRecvMsg(ep,payload);
-				}
-			},
-		},
-	},
+	Trace_Agent:false,
+	Trace_StMac:false,
+	Trace_Proc:false,
 }
 
 let tp=Network.CreateTransport(tpopt);
@@ -110,27 +87,25 @@ tp.SetTracing_Agent(false);
 
 tp.AttachReceiver('lb',recv);
 tp.AttachSender('lb',loopback);
-tp.AttachSender('tm',term);
-tp.SetSelector((tp,target)=>{
+tp.AttachSender('tm',terminal);
+
+tp.SetSelector((tp,target,prop)=>{
 	return (target=='')?'tm':'lb';
 });
 
 // endpoint setting
-const eopt={
+const epopt={
 	Log:log_local,
 	Launcher:launcher,
 	HappenTo:hap_local,
-	User:{
-		OnRecvMsg:(ep,payload)=>{
-
-			Log.Info('received from '+payload.From+'; '+payload.Body);
-		},
+	OnCome:(from,body,prop)=>{
+		Log.Info('received from '+from,body);
 	},
 }
 
 // loopback endpoints 
-let ep1=Network.CreateEndPoint(eopt).Open();
-let ep2=Network.CreateEndPoint(eopt).Open();
+let ep1=Network.CreateEndPoint(epopt).Open();
+let ep2=Network.CreateEndPoint(epopt).Open();
 
 ep1.SetTracing_EndPoint(false);
 ep2.SetTracing_EndPoint(false);
@@ -148,18 +123,19 @@ tp.Connect('EP2',ep2);
 
 	// send each other 
 	// (when onorderable delay test, maybe receive B to A) 
-	ep1.Send('EP2','Hello','Loopback Test1A');
-	ep2.Send('EP1','Hello','Loopback Test2A');
-	ep1.Send('EP2','Hello','Loopback Test1B');
-	ep2.Send('EP1','Hello','Loopback Test2B');
+	ep1.Send('EP2',null,'Loopback Test1A');
+	ep2.Send('EP1',null,'Loopback Test2A');
+	// can send a structure 
+	ep1.Send('EP2',null,{msg:'Loopback Test1B',tmp:[1,2,{a:3,b:4}]});
+	ep2.Send('EP1',null,{msg:'Loopback Test2B',tmp:[0,false,null,'',[],{}]});
 
 	// send to Transport (but not reach to opposite EndPoint) 
 	// EndPoint does not have an instance address to reply 
 	// and can only send in one way 
-	ep1.Launch('EP2','Hello','Communicate Test1');
-	ep1.Send('EP1','Hello','Loopback Test1');
-	ep2.Launch('EP1','Hello','Communicate Test2');
-	ep2.Launch('','Hello','Terminate Test');
+	ep1.Launch('EP2',null,'Communicate Test1');
+	ep1.Send('EP1',null,'Loopback Test1');
+	ep2.Launch('EP1',null,'Communicate Test2');
+	ep2.Launch('',null,'Terminate Test');
 	ep2.KickAll();
 
 	await Timing.DelayKit(1500).ToPromise();

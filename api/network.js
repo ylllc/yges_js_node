@@ -47,10 +47,10 @@ function _receiver_new(opt={}){
 		DubRatio:{Numeric:true,Default:0.0},
 		DubIntervalMin:{Integer:true,Default:0},
 		DubIntervalMax:{Integer:true,Default:0},
-		OnGate:{Callable:true,Default:(recver,packed)=>packed},
-		OnDecode:{Callable:true,Default:(recver,packed)=>{
+		OnGate:{Callable:true,Default:(recver,rawdata)=>rawdata},
+		OnDecode:{Callable:true,Default:(recver,rawdata)=>{
 			try{
-				return JSON.parse(packed);
+				return JSON.parse(rawdata);
 			}
 			catch(e){
 				return null;
@@ -76,21 +76,21 @@ function _receiver_new(opt={}){
 		return true;
 	}
 
-	const callRecv=(contents)=>{
+	const callRecv=(contents,prop)=>{
 
 		let tp=recver.GetTransport();
 		if(!tp){
 			log.Warn('Notice ('+recver.GetCaption()+') already cutoff',contents);
 			return;
 		}
-		tp._recv(contents);
+		tp._recv(contents,prop);
 
 		if(opt.DubRatio<=0)return;
 		if(Math.random()>=opt.DubRatio)return;
 
 		let delay=(opt.DubIntervalMax<1)?0:
 			(opt.DubIntervalMin+Math.random()*(opt.DubIntervalMax-opt.DubIntervalMin));
-		launch.Delay(delay,()=>callRecv(contents));
+		launch.Delay(delay,()=>callRecv(contents,prop));
 	}
 
 	let log=opt.Log;
@@ -130,7 +130,7 @@ function _receiver_new(opt={}){
 			rh.Close();
 		},
 
-		Receive:(packed)=>{
+		Receive:(rawdata,prop={})=>{
 
 			if(!priv.h4t){
 				priv.trace(()=>'Receiver ('+recver.GetCaption()+') not attached to a Transport, abandon it');
@@ -141,13 +141,13 @@ function _receiver_new(opt={}){
 				return;
 			}
 
-			packed=opt.OnGate(recver,packed);
-			if(!packed){
+			rawdata=opt.OnGate(recver,rawdata,prop);
+			if(!rawdata){
 				priv.trace(()=>'Receiver ('+recver.GetCaption()+') received invalid');
 				return;
 			}
 
-			let contents=opt.OnDecode(recver,packed);
+			let contents=opt.OnDecode(recver,rawdata,prop);
 			if(!contents){
 				priv.trace(()=>'Receiver ('+recver.GetCaption()+') received broken');
 				return;
@@ -156,12 +156,12 @@ function _receiver_new(opt={}){
 			priv.trace(()=>'Receiver ('+recver.GetCaption()+') received');
 
 			if(opt.DelayMax<1){
-				callRecv(contents);
+				callRecv(contents,prop);
 			}
 			else{
 				let delay=(opt.DelayMax<1)?0:
 					(opt.DelayMin+Math.random()*(opt.DelayMax-opt.DelayMin));
-				launch.Delay(delay,()=>callRecv(contents));
+				launch.Delay(delay,()=>callRecv(contents,prop));
 			}
 		},
 
@@ -189,34 +189,6 @@ function _receiver_new(opt={}){
 		recver.SetTracing_Receiver(side);
 	});
 
-
-//	const onReceived=(recver,from,contents)=>{
-//
-//		let ep=recver._private_.ep[target];
-//		if(!ep){
-//			log.Notice('Receiver ('+recver.GetCaption()+') not have an EndPoint for received for '+target,contents);
-//			return;
-//		}
-//
-//		for(let pl of contents){
-//			ep._private_.Receive(ep,from,pl.Type,pl.Body);
-//		}
-//
-//	}
-
-//	recver.Attach=(name,ep)=>{
-//		if(recver._private_.ep[name]){
-//			log.Warn('Receiver ('+recver.GetCaption()+') received from '+from+' for '+target,contents);
-//		}
-//
-//		recver._private_.ep[name]=ep.GetAgent();
-//	}
-//
-//	recver.Detach=(name)=>{
-//		if(!recver._private_.ep[name])return;
-//		delete recver._private_.ep[name];
-//	}
-
 	return recver;
 }
 
@@ -233,11 +205,11 @@ function _sender_new(opt={}){
 		DubRatio:{Numeric:true,Default:0.0},
 		DubIntervalMin:{Integer:true,Default:0},
 		DubIntervalMax:{Integer:true,Default:0},
-		OnEncode:{Callable:true,Default:(sender,contents)=>{
+		OnEncode:{Callable:true,Default:(sender,contents,prop)=>{
 			return JSON.stringify(contents);
 		}},
-		OnSend:{Callable:true,Default:(sender,packed)=>{
-			log.Fatal('OnSend is not impremented in Sender',packed);
+		OnSend:{Callable:true,Default:(sender,rawdata,prop)=>{
+			log.Fatal('OnSend is not impremented in Sender',rawdata);
 		}},
 	}},'opt');
 
@@ -259,11 +231,11 @@ function _sender_new(opt={}){
 		return true;
 	}
 
-	const callSend=(packed)=>{
+	const callSend=(rawdata,prop)=>{
 
 		priv.trace(()=>'sending from Sender ('+sender.GetCaption()+')');
 
-		opt.OnSend(sender,packed);
+		opt.OnSend(sender,rawdata,prop);
 		if(opt.DubRatio<=0)return;
 		if(Math.random()>=opt.DubRatio)return;
 
@@ -271,7 +243,7 @@ function _sender_new(opt={}){
 
 		let delay=(opt.DubIntervalMax<1)?0:
 			(opt.DubIntervalMin+Math.random()*(opt.DubIntervalMax-opt.DubIntervalMin));
-		launch.Delay(delay,()=>callSend(packed));
+		launch.Delay(delay,()=>callSend(rawdata,prop));
 	}
 
 	let sender=Agent.StandBy(opt);
@@ -292,18 +264,18 @@ function _sender_new(opt={}){
 		// public 
 		SetTracing_Sender:(side)=>priv.tracing_sender=!!side,
 
-		Send:(contents)=>{
+		Send:(contents,prop={})=>{
 			if(!checkReady())return;
 
-			let packed=opt.OnEncode(sender,contents);
+			let rawdata=opt.OnEncode(sender,contents,prop);
 
 			if(opt.DelayMax<1){
-				callSend(packed);
+				callSend(rawdata,prop);
 			}
 			else{
 				let delay=(opt.DelayMax<1)?0:
 					(opt.DelayMin+Math.random()*(opt.DelayMax-opt.DelayMin));
-				launch.Delay(delay,()=>callSend(packed));
+				launch.Delay(delay,()=>callSend(rawdata,prop));
 			}
 		},
 
@@ -345,9 +317,9 @@ function _loopback_new(receiver,opt={}){
 
 	let log=opt.Log;
 
-	opt.OnSend=(sender,packed)=>{
+	opt.OnSend=(sender,rawdata,prop)=>{
 		if(!receiver)return;
-		receiver.Receive(packed);
+		receiver.Receive(rawdata,prop);
 	}
 
 	if(!receiver){
@@ -374,8 +346,8 @@ function _terminate_new(opt={}){
 
 	let log=opt.Log;
 
-	opt.OnSend=(sender,packed)=>{
-		log.Tick('Sending terminated',packed);
+	opt.OnSend=(sender,rawdata,prop)=>{
+		log.Tick('Sending terminated',rawdata);
 	}
 
 	let sender=_sender_new(opt);
@@ -423,12 +395,6 @@ function _transport_new(opt={}){
 		PIDPrefix:{Literal:true},
 		PayloadSpecs:{Dict:{Struct:true}},
 		PayloadHooks:{Dict:{Struct:true}},
-		Unorderable:{Boolable:true,Default:false},
-		DelayMin:{Integer:true,Default:0},
-		DelayMax:{Integer:true,Default:0},
-		DubRatio:{Numeric:true,Default:0.0},
-		DubIntervalMin:{Integer:true,Default:0},
-		DubIntervalMax:{Integer:true,Default:0},
 	}},'opt');
 	let log=opt.Log;
 
@@ -516,6 +482,8 @@ function _transport_new(opt={}){
 
 		GetPayloadSpecs:()=>opt.PayloadSpecs,
 
+		GetEndPoint:(name)=>priv.ep[name]?.GetAgent(),
+
 		AttachReceiver:(name,recver)=>{
 
 			priv.trace(()=>'Receiver ('+recver.GetCaption()+') attaching as '+name+' on Transport ('+tp.Name+')');
@@ -569,8 +537,6 @@ function _transport_new(opt={}){
 		SetSelector:(cb_sel)=>{
 			priv.selector=cb_sel;
 		},
-
-		GetEndPoint:(name)=>priv.ep[name],
 
 		Connect:(name,ep)=>{
 
@@ -631,8 +597,8 @@ function _transport_new(opt={}){
 				return;
 			}
 
-			let sn=priv.selector(tp,target);
-			if(!sn){
+			let sn=priv.selector(tp,target,prop);
+			if(sn==null){
 				log.Fatal(()=>'Transport ('+tp.GetCaption()+') has no sender to send to '+target);
 				return;
 			}
@@ -645,7 +611,7 @@ function _transport_new(opt={}){
 			// queue this payload until kick() called 
 			cset.SendQ.push(content);
 		},
-		_kick:(target)=>{
+		_kick:(target,prop)=>{
 			if(!checkReady())return;
 
 			if(!priv.selector){
@@ -653,7 +619,7 @@ function _transport_new(opt={}){
 				return;
 			}
 
-			let sn=priv.selector(tp,target);
+			let sn=priv.selector(tp,target,prop);
 			if(!sn){
 				log.Fatal(()=>'Transport ('+tp.GetCaption()+') has no sender to send to '+target);
 				return;
@@ -676,9 +642,9 @@ function _transport_new(opt={}){
 			if(sq.length<1)return;
 			cs.SendQ=[]
 	
-			sender.Send(sq);
+			sender.Send(sq,prop);
 		},
-		_kickAll:()=>{
+		_kickAll:(prop)=>{
 			if(!checkReady())return;
 
 			for(let sn in priv.sender){
@@ -690,10 +656,10 @@ function _transport_new(opt={}){
 				let sq=cs.SendQ;
 				if(sq.length<1)return;
 				cs.SendQ=[]
-				sender.Send(sq);
+				sender.Send(sq,prop);
 			}
 		},
-		_recv:(contents)=>{
+		_recv:(contents,prop)=>{
 			if(!tp.IsReady()){
 				priv.trace('Transport ('+tp.GetCaption()+') received out of the service, abandon it');
 				return;
@@ -701,6 +667,18 @@ function _transport_new(opt={}){
 
 			for(let pl of contents){
 				let plt=pl.Type;
+				if(plt==null){
+					// endpoint call 
+					let eh=priv.ep[pl.To];
+					if(!eh){
+						log.Notice(()=>'EndPoint ('+pl.To+') not found');
+						continue;
+					}
+					eh.GetAgent()._come(pl.From,pl.Body,prop);
+					continue;
+				}
+
+
 				let pls=opt.PayloadSpecs[plt];
 				if(!pls){
 					log.Notice(()=>'undefined payload type: '+plt);
@@ -708,14 +686,14 @@ function _transport_new(opt={}){
 				}
 
 				let pid=pl.PID;
-				if(!pid){
+				if(pid==null){
 					// request from a guest 
 					let cb=opt.PayloadHooks[plt]?.OnRequest;
 					if(!cb){
 						log.Notice(()=>'no hooks OnRequest of payload type: '+plt);
 					}
 					else{
-						cb(tp,pl);
+						cb(tp,pl,prop);
 					}
 				}
 				else{
@@ -723,12 +701,12 @@ function _transport_new(opt={}){
 					let prot=priv.prot[pid];
 					if(!prot){
 						// handshaking 
-						cb=opt.PayloadHooks[plt]?.OnHanding;
+						cb=opt.PayloadHooks[plt]?.OnBound;
 						if(!cb){
-							log.Notice(()=>'no hooks OnHanding of payload type: '+plt,pl);
+							log.Notice(()=>'no hooks OnBound of payload type: '+plt,pl);
 						}
 						else{
-							let epn=cb(tp,pl);
+							let epn=cb(tp,pl,prop);
 							if(epn==null){
 								priv.trace(()=>'no handing EndPoint');
 							}
@@ -749,8 +727,8 @@ function _transport_new(opt={}){
 					}
 
 					// receivements 
-					cb=opt.PayloadHooks[plt]?.OnReplied;
-					if(cb && !cb(tp,prot,pl)){
+					cb=opt.PayloadHooks[plt]?.OnRespond;
+					if(cb && !cb(tp,prot,pl,prop)){
 						priv.trace(()=>'end of Protocol ('+pid+')');
 						tp.ExpireProtocol(pid);
 					}
@@ -786,12 +764,13 @@ function _protocol_new(tp,epn,pid,opt={}){
 		// public 
 		GetPID:()=>pid,
 		GetTransport:()=>tp,
+		GetEndPoint:()=>tp.GetEndPoint(epn),
 
 		Release:()=>{
 			tp.ExpireProtocol(pid);
 		},
 
-		Launch:(target,type,body,prop=null)=>{
+		Launch:(target,type,body,prop={})=>{
 
 			let pls=tp.GetPayloadSpecs()[type];
 			if(!pls){
@@ -816,15 +795,15 @@ function _protocol_new(tp,epn,pid,opt={}){
 
 			tp._launch(pid,epn,target,type,body,prop);
 		},
-		Kick:(target)=>{
-			tp._kick(target);
+		Kick:(target,prop={})=>{
+			tp._kick(target,prop);
 		},
-		KickAll:()=>{
-			tp._kickAll();
+		KickAll:(prop={})=>{
+			tp._kickAll(prop);
 		},
-		Send:(target,type,body,prop=null)=>{
+		Send:(target,type,body,prop={})=>{
 			prot.Launch(target,type,body,prop);
-			prot.Kick(target);
+			prot.Kick(target,prop);
 		},
 
 		Unlock:(type)=>{
@@ -844,12 +823,7 @@ function _endpoint_new(opt={}){
 		Trace_EndPoint:{Boolable:true},
 		Log:{Class:'YgEs.LocalLog',Default:Log},
 		AgentBypasses:{List:{Literal:true}},
-		Unorderable:{Boolable:true,Default:false},
-		DelayMin:{Integer:true,Default:0},
-		DelayMax:{Integer:true,Default:0},
-		DubRatio:{Numeric:true,Default:0.0},
-		DubIntervalMin:{Integer:true,Default:0},
-		DubIntervalMax:{Integer:true,Default:0},
+		OnCome:{Callable:true,Default:(from,body)=>{}},
 	}},'opt');
 
 	let log=opt.Log;
@@ -919,27 +893,27 @@ function _endpoint_new(opt={}){
 			return priv.tp.GetAgent();
 		},
 
-		Launch:(target,type,body,prop=null)=>{
+		Launch:(target,type,body,prop={})=>{
 			if(!checkConnected())return;
 
 			let tp=ep.GetTransport();
 			tp._launch(null,priv.tp.GetConnectionName(),target,type,body,prop);
 		},
-		Kick:(target)=>{
+		Kick:(target,prop={})=>{
 			if(!checkConnected())return;
 
 			let tp=ep.GetTransport();
-			tp._kick(target);
+			tp._kick(target,prop);
 		},
-		KickAll:()=>{
+		KickAll:(prop)=>{
 			if(!checkConnected())return;
 
 			let tp=ep.GetTransport();
-			tp._kickAll();
+			tp._kickAll(prop);
 		},
-		Send:(target,type,body,prop=null)=>{
+		Send:(target,type,body,prop={})=>{
 			ep.Launch(target,type,body,prop);
-			ep.Kick(target);
+			ep.Kick(target,prop);
 		},
 
 		// friends 
@@ -968,6 +942,11 @@ function _endpoint_new(opt={}){
 
 			return eh;
 		},
+		_come:(from,body,prop)=>{
+			if(!checkReady())return;
+
+			opt.OnCome(from,body,prop);
+		},
 	});
 
 	const agent_SetTracing=ep.Inherit('SetTracing',(side)=>{
@@ -981,10 +960,9 @@ function _endpoint_new(opt={}){
 let Network=YgEs.Network={
 	Name:'YgEs.Network',
 	User:{},
-	_private_:{},
 
-	CreateSender:_sender_new,
 	CreateReceiver:_receiver_new,
+	CreateSender:_sender_new,
 	CreateTransport:_transport_new,
 	CreateEndPoint:_endpoint_new,
 

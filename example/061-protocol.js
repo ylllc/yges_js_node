@@ -46,9 +46,9 @@ const recvopt={
 //	DubIntervalMin:0,
 //	DubIntervalMax:500,
 	// (for tough test) maybe cutoff during receiving 
-	OnGate:(recver,packed)=>{
-//		if(Math.random()<0.25)return packed.substring(0,Math.random()*packed.length);
-		return packed;
+	OnGate:(recver,rawdata,prop)=>{
+//		if(Math.random()<0.25)return rawdata.substring(0,Math.random()*rawdata.length);
+		return rawdata;
 	},
 }
 
@@ -67,8 +67,6 @@ const sendopt={
 	// (for tough test) insert random msec delay 
 	DelayMin:0,
 	DelayMax:400,
-	// (for tough test) ratio of short packet on sending 
-	Hurting:0.0,
 }
 
 // sender 
@@ -85,9 +83,12 @@ const tpopt={
 	TraceProc:false,
 	PIDPrefix:'Exam061',
 	PayloadSpecs:pld_specs,
+}
+
+const tpopt_server=Object.assign({},tpopt,{
 	PayloadHooks:{
 		HELLO:{
-			OnRequest:(tp,payload)=>{
+			OnRequest:(tp,payload,prop)=>{
 
 				// create a Protocol for continue communicating 
 				let prot=tp.NewProtocol('host',{Name:'Replying'});
@@ -96,11 +97,16 @@ const tpopt={
 				log_local.Info('Protocol ('+prot.GetPID()+') created by requested HELLO',payload);
 
 				// replying 
-				prot.Send(null,'HI','Hi, '+payload.From);
+				prot.Send(payload.From,'HI','Hi, '+payload.From);
 			},
 		},
+	},
+});
+
+const tpopt_client=Object.assign({},tpopt,{
+	PayloadHooks:{
 		HI:{
-			OnHanding:(tp,payload)=>{
+			OnBound:(tp,payload,prop)=>{
 
 				// calling by,
 				// - first replied by requested 
@@ -111,32 +117,32 @@ const tpopt={
 				// specify handing EndPoint 
 				return 'guest';
 			},
-			OnReplied:(tp,prot,payload)=>{
+			OnRespond:(tp,prot,payload,prop)=>{
 
 				log_local.Info('Replied on Protocol '+prot.GetPID(),payload);
 
-				// continue this Protocol 
-				return true;
+				// terminate this Protocol 
+				return false;
 			},
 		},
 	},
-}
+});
 
-let tp_host=Network.CreateTransport(tpopt);
+let tp_host=Network.CreateTransport(tpopt_server);
 tp_host.SetTracing_Transport(false);
 tp_host.SetTracing_Agent(false);
 
-let tp_guest=Network.CreateTransport(tpopt);
+let tp_guest=Network.CreateTransport(tpopt_client);
 tp_guest.SetTracing_Transport(false);
 tp_guest.SetTracing_Agent(false);
 
 tp_host.AttachReceiver('port_host',recv_host);
 tp_host.AttachSender('port_host',send_host);
-tp_host.SetSelector((tp,target)=>'port_host');
+tp_host.SetSelector((tp,target,prop)=>'port_host');
 
 tp_guest.AttachReceiver('port_guest',recv_guest);
 tp_guest.AttachSender('port_guest',send_guest);
-tp_guest.SetSelector((tp,target)=>'port_guest');
+tp_guest.SetSelector((tp,target,prop)=>'port_guest');
 
 // endpoint setting
 const epopt={
@@ -163,7 +169,7 @@ tp_guest.Connect('guest',ep_guest);
 	Log.Info('all ready');
 
 	// start a communicating 
-	ep_guest.Send(null,'HELLO','hello, Host');
+	ep_guest.Send(null,'HELLO','Hello, host');
 
 	await Timing.DelayKit(1500).ToPromise();
 
