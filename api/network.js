@@ -338,7 +338,7 @@ function _transport_new(opt={}){
 		Trace_Transport:{Boolable:true},
 		Log:{Class:'YgEs.LocalLog',Default:Log},
 		AgentBypasses:{List:{Literal:true}},
-		PIDPrefix:{Literal:true},
+		PIDPrefix:{Literal:true,Default:''},
 		PayloadSpecs:{Dict:{Struct:true}},
 		PayloadHooks:{Dict:{Struct:true}},
 	}},'opt');
